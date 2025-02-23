@@ -84,3 +84,9 @@ class Recruitment(Base):
     troops = relationship("Troops", back_populates="recruitment")
     recruitment_office = relationship("RecruitmentOffice", back_populates="recruitment")
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, index=True, nullable=False)
+    password = Column(String, index=True, nullable=False)

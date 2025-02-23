@@ -1,15 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import FastAPI, Depends, HTTPException
-from app.database import init_db, get_session
+from app.database import init_db, get_session, get_current_user
 from app.schemas import BranchCreateSchema, BranchSchema
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud import branches_crud
+from app.models import User
 
 router = APIRouter(prefix="/branches", tags=["Роды войск"])
 
 # API для создания нового подразделения
 @router.post("/", status_code=201, response_model=BranchSchema, summary="Создать род войск")
-async def create_branch(branch: BranchCreateSchema, db: AsyncSession = Depends(get_session)):
+async def create_branch(branch: BranchCreateSchema,
+                        db: AsyncSession = Depends(get_session),
+                        current_user: User = Depends(get_current_user)):
     return await branches_crud.create_branch(db=db, branch=branch)
 
 # API для получения списка подразделений

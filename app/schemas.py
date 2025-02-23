@@ -86,3 +86,14 @@ class RecruitmentSchema(RecruitmentCreateSchema):
 
     class Config:
         from_attributes = True
+
+class UserCreateSchema(BaseModel):
+    username: str
+    password: str
+
+class UserSchema(BaseModel):
+    id: int
+    username: str
+
+    class Config:
+        from_attributes = True
