@@ -41,12 +41,12 @@ async def get_medexams_of_recruits(
 
     return medexams
 
-@router.delete("/{medexams_id}", status_code=204, summary="Удалить мед. комиссию")
-async def delete_recruit(medexam_id: int, db: AsyncSession = Depends(get_session),
-                         current_user: User = Depends(get_current_user)):
-    existing_medexam= await medexams_crud.get_medexam_by_id(session=db, medexam_id=medexam_id)
-    if not existing_medexam:
-        raise HTTPException(status_code=404, detail="Призывник не найден.")
-
-    await db.delete(existing_medexam)
-    await db.commit()
+# @router.delete("/{medexams_id}", status_code=204, summary="Удалить мед. комиссию")
+# async def delete_recruit(medexam_id: int, db: AsyncSession = Depends(get_session),
+#                          current_user: User = Depends(get_current_user)):
+#     existing_medexam= await medexams_crud.get_medexam_by_id(session=db, medexam_id=medexam_id)
+#     if not existing_medexam:
+#         raise HTTPException(status_code=404, detail="Призывник не найден.")
+#
+#     await db.delete(existing_medexam)
+#     await db.commit()
