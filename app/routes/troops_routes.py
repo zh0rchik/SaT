@@ -1,15 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import get_session
+from app.database import get_session, get_current_user
 from app.schemas import TroopsSchema, TroopsCreateSchema
 from app.crud import troop_crud
 from app.routes import branches_routes
+
+from app.models import User
 
 router = APIRouter(prefix="/troops", tags=["Виды войск"])
 
 # API для создания новой вида войск
 @router.post("/", response_model=TroopsSchema, summary=["Создать вид войск"])
-async def create_troop(troop: TroopsCreateSchema, db: AsyncSession = Depends(get_session)):
+async def create_troop(troop: TroopsCreateSchema,
+                       db: AsyncSession = Depends(get_session),
+                       current_user: User = Depends(get_current_user)):
     return await troop_crud.create_troop(session=db, troop=troop)
 
 # API для отображения всех видов войск
@@ -34,7 +38,8 @@ async def update_troop(
         troop_id: int,
         name: str = None,
         branch_id: int = None,
-        db: AsyncSession = Depends(get_session)):
+        db: AsyncSession = Depends(get_session),
+        current_user: User = Depends(get_current_user)):
     exist_troop = await troop_crud.get_troop_by_id(session=db, troop_id=troop_id)
 
     if not exist_troop:
@@ -54,7 +59,9 @@ async def update_troop(
     return exist_troop
 
 @router.delete("/{troop_id}", status_code=204, summary="Удалить вид войск")
-async def delete_troop(troop_id: int, db: AsyncSession = Depends(get_session)):
+async def delete_troop(troop_id: int,
+                       db: AsyncSession = Depends(get_session),
+                       current_user: User = Depends(get_current_user)):
     existing_troop = await troop_crud.get_troop_by_id(session=db, troop_id=troop_id)
     if not existing_troop:
         raise HTTPException(status_code=404, detail="Данный род войск не найден!")

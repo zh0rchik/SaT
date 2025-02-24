@@ -33,7 +33,6 @@ async def get_current_user(
 
     subject = credentials.subject
 
-    # Если subject — это словарь, достаем username
     if isinstance(subject, dict) and "username" in subject:
         username = subject["username"]
     elif isinstance(subject, str):

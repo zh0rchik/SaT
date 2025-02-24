@@ -1,16 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import get_session
+from app.database import get_session, get_current_user
 from app.schemas import RecruitmentOfficeCreateSchema, RecruitmentOfficeSchema, ModeWorkOfficeCreateSchema, ModeWorkOfficeSchema
 from app.crud import recruitment_offices_crud
 from datetime import time
+from app.models import User
 
 router = APIRouter(prefix="/recruitment_offices", tags=["Призывные пункты"])
 
 @router.post("/", response_model=RecruitmentOfficeSchema, summary="Создать призывной пункт")
 async def create_recruitment_office(
         ro: RecruitmentOfficeCreateSchema,
-        db: AsyncSession = Depends(get_session)):
+        db: AsyncSession = Depends(get_session),
+        current_user: User = Depends(get_current_user)):
     return await recruitment_offices_crud.create_recruitment_office(session=db, recruitment_office=ro)
 
 @router.get("/", response_model=list[RecruitmentOfficeSchema], summary="Получить все пункты призыва")
@@ -33,6 +35,7 @@ async def update_recruitment_office(
         db: AsyncSession = Depends(get_session),
         address: str = None,
         chief_name: str = None,
+        current_user: User = Depends(get_current_user)
 ):
     exist_recruitment_office = await recruitment_offices_crud.get_recruitment_office_by_id(session=db,
                                                                                            recruitment_office_id=recruitment_office_id)
@@ -51,7 +54,7 @@ async def update_recruitment_office(
     return exist_recruitment_office
 
 @router.delete("/{recruitment_office_id}", status_code=204, summary="Удалить призывной пункт")
-async def delete_recruitment_office(recruitment_office_id: int, db: AsyncSession = Depends(get_session)):
+async def delete_recruitment_office(recruitment_office_id: int, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     existing_recruitment_office = await recruitment_offices_crud.get_recruitment_office_by_id(session=db, recruitment_office_id=recruitment_office_id)
     if not existing_recruitment_office:
         raise HTTPException(status_code=404, detail="Данный род войск не найден!")
@@ -62,7 +65,8 @@ async def delete_recruitment_office(recruitment_office_id: int, db: AsyncSession
 async def add_mode_work(
         recruitment_office_id: int,
         mode_work: ModeWorkOfficeCreateSchema,
-        db: AsyncSession = Depends(get_session)
+        db: AsyncSession = Depends(get_session),
+        current_user: User = Depends(get_current_user)
 ):
     mode_work = await recruitment_offices_crud.add_mode_work(session=db,
                                                              recruitment_office_id=recruitment_office_id,
@@ -84,7 +88,9 @@ async def get_modes_work(recruitment_office_id: int, db: AsyncSession = Depends(
     return modes_work
 
 @router.delete("/work_hours_office/{work_hours_office}", status_code=204, summary="Удалить режим работы")
-async def delete_mode_work(mode_work_id: int, db: AsyncSession = Depends(get_session)):
+async def delete_mode_work(mode_work_id: int,
+                           db: AsyncSession = Depends(get_session),
+                           current_user: User = Depends(get_current_user)):
     existing_mode_work = await recruitment_offices_crud.get_mode_work_by_id(session=db, mode_work_id=mode_work_id)
     if not existing_mode_work:
         raise HTTPException(status_code=404, detail="Режим работы не найден.")

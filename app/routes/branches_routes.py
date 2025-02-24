@@ -37,7 +37,8 @@ async def get_branch_by_id(branch_id: int, db: AsyncSession = Depends(get_sessio
 async def update_branch(
         branch_id: int,
         name: str = None,
-        db: AsyncSession = Depends(get_session)):
+        db: AsyncSession = Depends(get_session),
+        current_user: User = Depends(get_current_user)):
     # Получаем существующее подразделение
     existing_branch = await branches_crud.get_branch_by_id(db=db, branch_id=branch_id)
     if not existing_branch:
@@ -55,7 +56,7 @@ async def update_branch(
 
 # API для удаления подразделения
 @router.delete("/{branch_id}", status_code=204,summary="Удалить род войск")
-async def delete_branch(branch_id: int, db: AsyncSession = Depends(get_session)):
+async def delete_branch(branch_id: int, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     # Получаем существующее подразделение
     existing_branch = await branches_crud.get_branch_by_id(db=db, branch_id=branch_id)
     if not existing_branch:

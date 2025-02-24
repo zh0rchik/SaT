@@ -9,8 +9,8 @@ from app.schemas import RecruitmentCreateSchema, RecruitmentSchema
 from app.crud import recruitments_crud, recruitment_offices_crud, \
     troop_crud
 from app.routes import troops_routes, recruitment_offices_router, medexams_routes
-from app.database import get_session
-from app.models import Recruitment
+from app.database import get_session, get_current_user
+from app.models import Recruitment, User
 
 router = APIRouter(prefix="/recruitments", tags=["Призывники"])
 
@@ -22,7 +22,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 @router.post("/", response_model=RecruitmentSchema, summary="Добавить призывника")
 async def create_recruitment(
         recruitment: RecruitmentCreateSchema,
-        db: AsyncSession = Depends(get_session)
+        db: AsyncSession = Depends(get_session),
+        current_user: User = Depends(get_current_user)
 ):
     # Создаем призывника через CRUD-функцию
     new_recruitment = await recruitments_crud.create_recruitment(
@@ -36,7 +37,8 @@ async def create_recruitment(
 async def upload_avatar(
         recruitment_id: int,
         photo: UploadFile = File(...),
-        db: AsyncSession = Depends(get_session)
+        db: AsyncSession = Depends(get_session),
+        current_user: User = Depends(get_current_user)
 ):
     try:
         # Генерируем уникальное имя файла
@@ -88,7 +90,8 @@ async def update_recruitment(
         date_of_birth: date = None,
         marital_status: bool = None,
         troop_id: int = None,
-        recruitment_office_id = None
+        recruitment_office_id = None,
+        current_user: User = Depends(get_current_user)
 ):
     recruit = await recruitments_crud.get_recruitment_by_id(session=db, recruitment_id=recruitment_id)
     if not recruit:
@@ -129,7 +132,9 @@ async def update_recruitment(
     return recruit
 
 @router.delete("/{recruitment_id}", status_code=204, summary="Удалить призывника")
-async def delete_recruit(recruit_id: int, db: AsyncSession = Depends(get_session)):
+async def delete_recruit(recruit_id: int,
+                         db: AsyncSession = Depends(get_session),
+                         current_user: User = Depends(get_current_user)):
     existing_recruit = await recruitments_crud.get_recruitment_by_id(session=db, recruitment_id=recruit_id)
     if not existing_recruit:
         raise HTTPException(status_code=404, detail="Призывник не найден.")
