@@ -25,7 +25,7 @@ async def create_medexam(
     return await medexams_crud.create_medexam(session=db, medexam=medexam)
 
 
-@router.get("/", response_model=list[MedExamSchema], summary="Получить мед. комиссии призывника")
+@router.get("/{recruit_id}", response_model=list[MedExamSchema], summary="Получить мед. комиссии призывника")
 async def get_medexams_of_recruits(
         recruit_id: int,
         db: AsyncSession = Depends(get_session)):
