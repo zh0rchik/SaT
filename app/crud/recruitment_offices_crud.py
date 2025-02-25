@@ -66,3 +66,7 @@ async def get_modes_work(session: AsyncSession, recruitment_office_id: int):
         return result.scalars().all()
     else:
         return None
+
+async def get_all_modes_work(session: AsyncSession):
+    result = await session.execute(select(ModeWorkOffice))
+    return result.scalars().all()
