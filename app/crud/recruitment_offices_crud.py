@@ -95,6 +95,34 @@ async def get_modes_work(session: AsyncSession, recruitment_office_id: int):
     else:
         return None
 
-async def get_all_modes_work(session: AsyncSession):
-    result = await session.execute(select(ModeWorkOffice))
+async def get_all_modes_work(
+    session: AsyncSession,
+    day: Optional[str] = None,
+    recruitment_office_id: Optional[int] = None,
+    skip: int = 0,
+    limit: int = 10,
+    sort_by: Optional[str] = None,
+    order: str = "asc"
+):
+    query = select(ModeWorkOffice)
+
+    # Фильтрация по дню недели
+    if day:
+        query = query.filter(ModeWorkOffice.day == day)
+
+    # Фильтрация по ID офиса
+    if recruitment_office_id:
+        query = query.filter(ModeWorkOffice.recruitment_office_id == recruitment_office_id)
+
+    # Сортировка по указанному полю
+    if sort_by:
+        column = getattr(ModeWorkOffice, sort_by, None)
+        if column is not None:
+            query = query.order_by(column.asc() if order == "asc" else column.desc())
+
+    # Пагинация
+    query = query.offset(skip).limit(limit)
+
+    result = await session.execute(query)
     return result.scalars().all()
+

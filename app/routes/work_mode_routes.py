@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_session, get_current_user
 from app.schemas import ModeWorkOfficeCreateSchema, ModeWorkOfficeSchema
@@ -46,8 +48,21 @@ async def delete_mode_work(mode_work_id: int,
     await db.commit()
 
 @router.get("/", response_model=list[ModeWorkOfficeSchema], summary="Получить все режимы работы офисов")
-async def get_all_modes_work(db: AsyncSession = Depends(get_session)):
-    modes_work = await recruitment_offices_crud.get_all_modes_work(session=db)
+async def get_all_modes_work(
+    db: AsyncSession = Depends(get_session),
+    day: Optional[str] = Query(None),                      # Фильтрация по дню недели
+    recruitment_office_id: Optional[int] = Query(None),          # Фильтрация по ID офиса
+    skip: int = Query(0),                                        # Сколько записей пропустить (пагинация)
+    limit: int = Query(10),                                      # Сколько вернуть (пагинация)
+    sort_by: Optional[str] = Query(None),                        # Поле для сортировки
+    order: str = Query("asc", regex="^(asc|desc)$")              # Порядок сортировки
+):
+    modes_work = await recruitment_offices_crud.get_all_modes_work(
+        session=db, day=day, recruitment_office_id=recruitment_office_id,
+        skip=skip, limit=limit, sort_by=sort_by, order=order
+    )
+
     if not modes_work:
         raise HTTPException(status_code=404, detail="Режимы работы не найдены!")
+
     return modes_work
