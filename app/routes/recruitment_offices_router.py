@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_session, get_current_user
 from app.schemas import RecruitmentOfficeCreateSchema, RecruitmentOfficeSchema, ModeWorkOfficeCreateSchema, ModeWorkOfficeSchema
@@ -16,8 +18,18 @@ async def create_recruitment_office(
     return await recruitment_offices_crud.create_recruitment_office(session=db, recruitment_office=ro)
 
 @router.get("/", response_model=list[RecruitmentOfficeSchema], summary="Получить все пункты призыва")
-async def read_recruitment_offices(db: AsyncSession = Depends(get_session)):
-    recruitment_offices = await recruitment_offices_crud.get_recruit_offices(session=db)
+async def read_recruitment_offices(
+    db: AsyncSession = Depends(get_session),
+    address: Optional[str] = Query(None),                       # Фильтрация по адресу (вхождение)
+    chief_name: Optional[str] = Query(None),                    # Фильтрация по начальнику (вхождение)
+    skip: int = Query(0),                                       # Сколько записей пропустить (пагинация)
+    limit: int = Query(10),                                     # Сколько вернуть (пагинация)
+    sort_by: Optional[str] = Query(None),                       # Поле для сортировки
+    order: str = Query("asc", regex="^(asc|desc)$")             # Порядок сортировки
+):
+    recruitment_offices = await recruitment_offices_crud.get_recruit_offices(
+        session=db, address=address, chief_name=chief_name, skip=skip, limit=limit, sort_by=sort_by, order=order
+    )
     return recruitment_offices
 
 @router.get("/{recruitment_office_id}", response_model=RecruitmentOfficeSchema, summary="Получить призывной пункт по ID")
