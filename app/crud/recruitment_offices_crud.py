@@ -16,7 +16,7 @@ async def create_recruitment_office(session, recruitment_office):
     return db_ro
 
 
-async def get_branches(session: AsyncSession):
+async def get_recruit_offices(session: AsyncSession):
     result = await session.execute(select(RecruitmentOffice))
     return result.scalars().all()
 

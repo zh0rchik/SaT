@@ -17,7 +17,7 @@ async def create_recruitment_office(
 
 @router.get("/", response_model=list[RecruitmentOfficeSchema], summary="Получить все пункты призыва")
 async def read_recruitment_offices(db: AsyncSession = Depends(get_session)):
-    recruitment_offices = await recruitment_offices_crud.get_branches(session=db)
+    recruitment_offices = await recruitment_offices_crud.get_recruit_offices(session=db)
     return recruitment_offices
 
 @router.get("/{recruitment_office_id}", response_model=RecruitmentOfficeSchema, summary="Получить призывной пункт по ID")
@@ -57,7 +57,7 @@ async def update_recruitment_office(
 async def delete_recruitment_office(recruitment_office_id: int, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     existing_recruitment_office = await recruitment_offices_crud.get_recruitment_office_by_id(session=db, recruitment_office_id=recruitment_office_id)
     if not existing_recruitment_office:
-        raise HTTPException(status_code=404, detail="Данный род войск не найден!")
+        raise HTTPException(status_code=404, detail="Данный пункт не найден")
 
     await recruitment_offices_crud.delete_recruitment_office(session=db, recruitment_office_id=recruitment_office_id)
 
@@ -81,7 +81,7 @@ async def get_modes_work(recruitment_office_id: int, db: AsyncSession = Depends(
     existing_recruitment_office = await recruitment_offices_crud.get_recruitment_office_by_id(session=db,
                                                                                               recruitment_office_id=recruitment_office_id)
     if not existing_recruitment_office:
-        raise HTTPException(status_code=404, detail="Данный род войск не найден!")
+        raise HTTPException(status_code=404, detail="Данный режим работы не найден не найден")
 
     modes_work = await recruitment_offices_crud.get_modes_work(session=db, recruitment_office_id=recruitment_office_id)
 
