@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 import uuid
@@ -69,8 +71,24 @@ async def upload_avatar(
 
 # Отобразить всех призывников
 @router.get("/", response_model=list[RecruitmentSchema], summary="Получить всех призывников")
-async def read_recruitments(db: AsyncSession = Depends(get_session)):
-    recruitments = await recruitments_crud.get_recruitments(session=db)
+async def read_recruitments(
+        db: AsyncSession = Depends(get_session),
+        name: Optional[str] = Query(None),                           # Фильтрация по имени
+        address: Optional[str] = Query(None),                        # Фильтрация по адресу
+        marital_status: Optional[bool] = Query(None),                # Фильтрация по marital_status
+        recruitment_office_id: Optional[int] = Query(None),          # Фильтрация по recruitment_office_id
+        date_of_birth: Optional[date] = Query(None),                 # Фильтрация по дате рождения
+        troop_id: Optional[int] = Query(None),                       # Фильтрация по troop_id
+        skip: int = Query(0),                                        # Сколько записей пропустить
+        limit: int = Query(10),                                      # Сколько вернуть
+        sort_by: Optional[str] = Query(None),                        # Поле для сортировки
+        order: str = Query("asc", regex="^(asc|desc)$")               # Порядок сортировки
+        ):
+    recruitments = await recruitments_crud.get_recruitments(
+        session=db, name=name, address=address, marital_status=marital_status,
+        recruitment_office_id=recruitment_office_id, date_of_birth=date_of_birth,
+        troop_id=troop_id, skip=skip, limit=limit, sort_by=sort_by, order=order
+    )
     return recruitments
 
 @router.get("/{recruitments_id}", response_model=RecruitmentSchema, summary="Получить призывника по ID")
