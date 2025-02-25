@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_session, get_current_user
 from app.schemas import TroopsSchema, TroopsCreateSchema
@@ -17,9 +19,19 @@ async def create_troop(troop: TroopsCreateSchema,
     return await troop_crud.create_troop(session=db, troop=troop)
 
 # API для отображения всех видов войск
-@router.get("/", response_model=list[TroopsSchema], summary=["Получить все виды войск"])
-async def read_troops(db: AsyncSession = Depends(get_session)):
-    troops = await troop_crud.get_troops(session=db)
+@router.get("/", response_model=list[TroopsSchema], summary="Получить все виды войск")
+async def read_troops(
+        db: AsyncSession = Depends(get_session),
+        skip: int = Query(0),                                   # Сколько записей пропустить - пагинация
+        limit: int = Query(10),                                 # Сколько вернуть - пагинация
+        sort_by: Optional[str] = Query(None),                   # Поле для сортировки
+        order: str = Query("asc", regex="^(asc|desc)$"),         # Порядок сортировки
+        name: Optional[str] = Query(None),                       # Фильтрация по имени
+        branch_id: Optional[int] = Query(None)                   # Фильтрация по branch_id
+        ):
+    troops = await troop_crud.get_troops(
+        session=db, skip=skip, limit=limit, sort_by=sort_by, order=order, name=name, branch_id=branch_id
+    )
     return troops
 
 # API для получения записи по ID

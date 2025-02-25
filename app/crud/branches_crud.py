@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models import Branch
@@ -12,8 +14,25 @@ async def create_branch(db: AsyncSession, branch: BranchCreateSchema):
     return db_branch
 
 # Функция для получения всех подразделений
-async def get_branches(db: AsyncSession):
-    result = await db.execute(select(Branch))
+async def get_branches(db: AsyncSession, skip: int = 0, limit: int = 10, sort_by: Optional[str] = None,
+                       order: str = "asc", name: Optional[str] = None):
+    query = select(Branch)
+
+    # Фильтрация по названию
+    if name:
+        query = query.filter(Branch.name.ilike(f"%{name}%"))
+
+    # Сортировка
+    if sort_by:
+        if order == "asc":
+            query = query.order_by(getattr(Branch, sort_by).asc())
+        else:
+            query = query.order_by(getattr(Branch, sort_by).desc())
+
+    # Пагинация
+    query = query.offset(skip).limit(limit)
+
+    result = await db.execute(query)
     return result.scalars().all()
 
 # Примерный код для CRUD операций

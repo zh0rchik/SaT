@@ -1,3 +1,5 @@
+from typing import Optional
+
 from app.schemas import TroopsCreateSchema
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Troops, Branch
@@ -26,8 +28,28 @@ async def create_troop(session: AsyncSession, troop: TroopsCreateSchema):
         await session.rollback()
         raise HTTPException(status_code=404, detail="Error: " + str(e))
 
-async def get_troops(session: AsyncSession):
-    result = await session.execute(select(Troops))
+async def get_troops(session: AsyncSession, skip: int = 0, limit: int = 10, sort_by: Optional[str] = None,
+                     order: str = "asc", name: Optional[str] = None, branch_id: Optional[int] = None):
+    query = select(Troops)
+
+    # Фильтрация по имени (если передан параметр name)
+    if name:
+        query = query.filter(Troops.name.ilike(f"%{name}%"))
+
+    # Фильтрация по branch_id (если передан параметр branch_id)
+    if branch_id:
+        query = query.filter(Troops.branch_id == branch_id)
+
+    # Сортировка по полю sort_by (если передан параметр sort_by)
+    if sort_by:
+        column = getattr(Troops, sort_by, None)
+        if column is not None:
+            query = query.order_by(column.asc() if order == "asc" else column.desc())
+
+    # Пагинация
+    query = query.offset(skip).limit(limit)
+
+    result = await session.execute(query)
     return result.scalars().all()
 
 async def get_troop_by_id(session:AsyncSession, troop_id: int):

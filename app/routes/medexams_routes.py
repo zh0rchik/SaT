@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_session
 from app.models import Recruitment, MedExam
@@ -6,6 +8,7 @@ from app.schemas import MedExamSchema, MedExamCreateSchema
 from app.crud import medexams_crud, recruitments_crud
 from sqlalchemy import select
 from app.routes.recruitments_router import update_recruitment
+from datetime import date
 
 router = APIRouter(prefix="/medexams", tags=["Медицинские комиссии"])
 
@@ -50,3 +53,23 @@ async def get_medexams_of_recruits(
 #
 #     await db.delete(existing_medexam)
 #     await db.commit()
+
+@router.get("/", response_model=list[MedExamSchema], summary="Получить все мед. комиссии")
+async def read_medexams(
+        db: AsyncSession = Depends(get_session),
+        skip: int = Query(0),                                   # Сколько записей пропустить - пагинация
+        limit: int = Query(10),                                 # Сколько вернуть - пагинация
+        sort_by: Optional[str] = Query(None),                   # Поле для сортировки
+        order: str = Query("asc", regex="^(asc|desc)$"),         # Порядок сортировки
+        recruitment_id: Optional[int] = Query(None),             # Фильтрация по рекруту
+        date_from: Optional[date] = Query(None),                 # Фильтрация по дате начала
+        date_to: Optional[date] = Query(None),                   # Фильтрация по дате конца
+        result: Optional[str] = Query(None)                      # Фильтрация по результату
+        ):
+
+    # Передаем параметры в CRUD
+    medexams = await medexams_crud.get_all(
+        session=db, skip=skip, limit=limit, sort_by=sort_by, order=order,
+        recruitment_id=recruitment_id, date_from=date_from, date_to=date_to, result=result
+    )
+    return medexams

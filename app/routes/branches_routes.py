@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi import FastAPI, Depends, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Query, Depends, HTTPException
 from app.database import init_db, get_session, get_current_user
 from app.schemas import BranchCreateSchema, BranchSchema
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud import branches_crud
 from app.models import User
+
 
 router = APIRouter(prefix="/branches", tags=["Роды войск"])
 
@@ -17,8 +19,17 @@ async def create_branch(branch: BranchCreateSchema,
 
 # API для получения списка подразделений
 @router.get("/", response_model=list[BranchSchema], summary="Получить все рода войск")
-async def read_branches(db: AsyncSession = Depends(get_session)):
-    branches = await branches_crud.get_branches(db=db)
+async def read_branches(
+        db: AsyncSession = Depends(get_session),
+        skip: int = Query(0),                                   # Сколько записей пропустить - пагинация
+        limit: int = Query(10),                                 # сколько вернуть - пагинация
+        sort_by: Optional[str] = Query(None),                   # поле для сортировки
+        order: str = Query("asc", regex="^(asc|desc)$"), # порядок
+        name: Optional[str] = Query(None)                       # фильтр по названию (ищет вхождения) - фильтрация
+        ):
+    branches = await branches_crud.get_branches(
+        db=db, skip=skip, limit=limit, sort_by=sort_by, order=order, name=name
+    )
     return branches
 
 #API для получения сущности по индетификатору
