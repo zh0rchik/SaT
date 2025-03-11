@@ -15,7 +15,7 @@ router = APIRouter(prefix="/medexams", tags=["Медицинские комис�
 from app.models import User
 from app.database import get_session, get_current_user
 
-@router.post("/", response_model=MedExamSchema, summary="Создать мед. комиссию")
+@router.post("/", response_model=MedExamSchema, status_code=201, summary="Создать мед. комиссию")
 async def create_medexam(
         medexam: MedExamCreateSchema,
         db: AsyncSession = Depends(get_session),
@@ -28,18 +28,18 @@ async def create_medexam(
     return await medexams_crud.create_medexam(session=db, medexam=medexam)
 
 
-@router.get("/{recruit_id}", response_model=list[MedExamSchema], summary="Получить мед. комиссии призывника")
+@router.get("/{recruitment_id}", response_model=list[MedExamSchema], summary="Получить мед. комиссии призывника")
 async def get_medexams_of_recruits(
-        recruit_id: int,
+        recruitment_id: int,
         db: AsyncSession = Depends(get_session)):
-    check_recruitment = await db.execute(select(Recruitment).filter_by(id=recruit_id))
+    check_recruitment = await db.execute(select(Recruitment).filter_by(id=recruitment_id))
     recruitment = check_recruitment.scalar_one_or_none()
 
     if not recruitment:
         raise HTTPException(status_code=404, detail="Призывник не найден!")
 
     # Получаем все медкомиссии
-    result = await db.execute(select(MedExam).filter_by(recruitment_id=recruit_id))
+    result = await db.execute(select(MedExam).filter_by(recruitment_id=recruitment_id))
     medexams = result.scalars().all()
 
     return medexams

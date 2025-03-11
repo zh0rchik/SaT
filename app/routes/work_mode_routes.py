@@ -10,7 +10,7 @@ from app.models import User
 
 router = APIRouter(prefix="/work_hours_office", tags=["Режимы работы"])
 
-@router.post("/{recruitment_office_id}", response_model=ModeWorkOfficeSchema, summary="Добавить режим работы офиса")
+@router.post("/{recruitment_office_id}", status_code=201, response_model=ModeWorkOfficeSchema, summary="Добавить режим работы офиса")
 async def add_mode_work(
         recruitment_office_id: int,
         mode_work: ModeWorkOfficeCreateSchema,
@@ -36,7 +36,7 @@ async def get_modes_work(recruitment_office_id: int, db: AsyncSession = Depends(
 
     return modes_work
 
-@router.delete("/{work_hours_office}", status_code=204, summary="Удалить режим работы")
+@router.delete("/{mode_work_id}", status_code=204, summary="Удалить режим работы")
 async def delete_mode_work(mode_work_id: int,
                            db: AsyncSession = Depends(get_session),
                            current_user: User = Depends(get_current_user)):

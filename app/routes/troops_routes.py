@@ -12,7 +12,7 @@ from app.models import User
 router = APIRouter(prefix="/troops", tags=["Виды войск"])
 
 # API для создания новой вида войск
-@router.post("/", response_model=TroopsSchema, summary=["Создать вид войск"])
+@router.post("/", status_code=201, response_model=TroopsSchema, summary=["Создать вид войск"])
 async def create_troop(troop: TroopsCreateSchema,
                        db: AsyncSession = Depends(get_session),
                        current_user: User = Depends(get_current_user)):

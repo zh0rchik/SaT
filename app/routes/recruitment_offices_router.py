@@ -10,7 +10,7 @@ from app.models import User
 
 router = APIRouter(prefix="/recruitment_offices", tags=["Призывные пункты"])
 
-@router.post("/", response_model=RecruitmentOfficeSchema, summary="Создать призывной пункт")
+@router.post("/", status_code=201, response_model=RecruitmentOfficeSchema, summary="Создать призывной пункт")
 async def create_recruitment_office(
         ro: RecruitmentOfficeCreateSchema,
         db: AsyncSession = Depends(get_session),

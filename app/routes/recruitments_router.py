@@ -21,7 +21,7 @@ UPLOAD_DIR = "static/uploads/avatars"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Создать призывника
-@router.post("/", response_model=RecruitmentSchema, summary="Добавить призывника")
+@router.post("/", status_code=201, response_model=RecruitmentSchema, summary="Добавить призывника")
 async def create_recruitment(
         recruitment: RecruitmentCreateSchema,
         db: AsyncSession = Depends(get_session),
@@ -91,7 +91,7 @@ async def read_recruitments(
     )
     return recruitments
 
-@router.get("/{recruitments_id}", response_model=RecruitmentSchema, summary="Получить призывника по ID")
+@router.get("/{recruitment_id}", response_model=RecruitmentSchema, summary="Получить призывника по ID")
 async def get_recruitment_by_id(recruitment_id: int, db: AsyncSession = Depends(get_session)):
     result = await recruitments_crud.get_recruitment_by_id(session=db, recruitment_id=recruitment_id)
     if not result:
@@ -150,12 +150,13 @@ async def update_recruitment(
     return recruit
 
 @router.delete("/{recruitment_id}", status_code=204, summary="Удалить призывника")
-async def delete_recruit(recruit_id: int,
+async def delete_recruit(recruitment_id: int,  # Параметр теперь называется "recruitment_id"
                          db: AsyncSession = Depends(get_session),
                          current_user: User = Depends(get_current_user)):
-    existing_recruit = await recruitments_crud.get_recruitment_by_id(session=db, recruitment_id=recruit_id)
+    existing_recruit = await recruitments_crud.get_recruitment_by_id(session=db, recruitment_id=recruitment_id)
     if not existing_recruit:
         raise HTTPException(status_code=404, detail="Призывник не найден.")
 
     await db.delete(existing_recruit)
     await db.commit()
+
