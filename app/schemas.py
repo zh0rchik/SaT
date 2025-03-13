@@ -97,3 +97,11 @@ class UserSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+class LoginResponseSchema(BaseModel):
+    id: int
+    username: str
+    access_token: str
+
+    class Config:
+        orm_mode = True
