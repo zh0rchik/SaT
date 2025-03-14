@@ -9,7 +9,7 @@
       <button @click="logout">Выйти</button>
     </div>
 
-    <!-- Если пользователь не авторизован, показываем вход/регистрацию -->
+    <!-- Если пользователь не авторизован -->
     <div v-else class="auth-buttons">
       <button @click="currentTab = 'login'" :class="{ active: currentTab === 'login' }">Войти</button>
       <button @click="currentTab = 'register'" :class="{ active: currentTab === 'register' }">Зарегистрироваться</button>
@@ -17,30 +17,20 @@
 
     <hr>
 
-    <!-- Меню для переключения вкладок -->
+    <!-- Меню вкладок -->
     <div class="menu-tabs">
       <button @click="currentTab = 'branches'" :class="{ active: currentTab === 'branches' }">Роды войск</button>
       <button @click="currentTab = 'troops'" :class="{ active: currentTab === 'troops' }">Виды войск</button>
+      <button @click="currentTab = 'recruitment_offices'" :class="{ active: currentTab === 'recruitment_offices' }">Призывные пункты</button>
     </div>
 
-    <!-- Секция отображения данных -->
+    <!-- Контент -->
     <div class="content-section">
-      <div v-if="currentTab === 'branches'">
-        <BranchesList :user="user" />
-      </div>
-
-      <div v-if="currentTab === 'troops'">
-        <TroopsList :user="user" />
-      </div>
-
-      <!-- Страницы входа и регистрации -->
-      <div v-if="currentTab === 'login'">
-        <LoginPage @login="handleLogin" />
-      </div>
-
-      <div v-if="currentTab === 'register'">
-        <RegisterPage @register="handleRegister" />
-      </div>
+      <BranchesList v-if="currentTab === 'branches'" :user="user" />
+      <TroopsList v-if="currentTab === 'troops'" :user="user" />
+      <RecruitmentOfficesList v-if="currentTab === 'recruitment_offices'" :user="user" />
+      <LoginPage v-if="currentTab === 'login'" @login="handleLogin" />
+      <RegisterPage v-if="currentTab === 'register'" @register="handleRegister" />
     </div>
   </div>
 </template>
@@ -48,6 +38,7 @@
 <script>
 import BranchesList from '@/components/BranchesList.vue';
 import TroopsList from '@/components/TroopsList.vue';
+import RecruitmentOfficesList from '@/components/RecruitmentOfficesList.vue';
 import LoginPage from '@/components/LoginPage.vue';
 import RegisterPage from '@/components/RegisterPage.vue';
 
@@ -56,66 +47,44 @@ export default {
   components: {
     BranchesList,
     TroopsList,
+    RecruitmentOfficesList,
     LoginPage,
     RegisterPage
   },
   data() {
     return {
-      currentTab: 'branches',  // Текущая активная вкладка
-      user: null,              // Состояние авторизованного пользователя
-      errorMessage: ''         // Сообщения об ошибках
+      currentTab: 'branches',
+      user: null
     };
   },
   methods: {
-    // Обработка успешного входа
-    async handleLogin(responseData) {
-      this.errorMessage = '';
-      try {
-        if (responseData.access_token) {
-          localStorage.setItem('user', JSON.stringify({
-            username: responseData.username,
-            token: responseData.access_token
-          }));
-          this.user = { username: responseData.username };
-          this.currentTab = 'branches'; // Переход на основную вкладку
-        } else {
-          this.errorMessage = 'Неверные данные для входа';
-        }
-      } catch (error) {
-        console.error('Ошибка при входе:', error);
-        this.errorMessage = 'Ошибка при входе. Повторите попытку.';
+    handleLogin(responseData) {
+      if (responseData.access_token) {
+        localStorage.setItem('user', JSON.stringify({
+          username: responseData.username,
+          token: responseData.access_token
+        }));
+        this.user = { username: responseData.username };
+        this.currentTab = 'branches';
       }
     },
-
-    // Обработка успешной регистрации
-    async handleRegister(responseData) {
-      this.errorMessage = '';
-      try {
-        if (responseData.access_token) {
-          localStorage.setItem('user', JSON.stringify({
-            username: responseData.username,
-            token: responseData.access_token
-          }));
-          this.user = { username: responseData.username };
-          this.currentTab = 'branches'; // Переход на основную вкладку
-        } else {
-          this.errorMessage = 'Ошибка при входе после регистрации';
-        }
-      } catch (error) {
-        console.error('Ошибка при регистрации:', error);
-        this.errorMessage = 'Ошибка при регистрации. Повторите попытку.';
+    handleRegister(responseData) {
+      if (responseData.access_token) {
+        localStorage.setItem('user', JSON.stringify({
+          username: responseData.username,
+          token: responseData.access_token
+        }));
+        this.user = { username: responseData.username };
+        this.currentTab = 'branches';
       }
     },
-
-    // Выход из системы
     logout() {
       localStorage.removeItem('user');
       this.user = null;
-      this.currentTab = 'branches'; // Возвращаемся на главную вкладку
+      this.currentTab = 'branches';
     }
   },
   mounted() {
-    // Проверяем наличие сохраненного пользователя
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       this.user = JSON.parse(savedUser);
@@ -123,6 +92,59 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+#app {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.menu-tabs button {
+  margin-right: 10px;
+  padding: 10px 20px;
+  border: none;
+  background-color: #eee;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.menu-tabs button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.auth-buttons button {
+  margin-right: 10px;
+  padding: 10px 20px;
+  border: none;
+  background-color: #28a745;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.auth-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auth-info button {
+  padding: 6px 12px;
+  border: none;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.content-section {
+  margin-top: 20px;
+}
+</style>
+
 
 <style scoped>
 /* Основной контейнер */
@@ -145,6 +167,7 @@ export default {
   background-color: #eee;
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
 .menu-tabs button.active {
@@ -161,6 +184,7 @@ export default {
   color: white;
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
 .auth-buttons button.active {
@@ -185,6 +209,11 @@ export default {
   color: white;
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.auth-info button:hover {
+  background-color: #c82333;
 }
 
 /* Основной контент */
@@ -196,5 +225,20 @@ export default {
 .error {
   color: red;
   margin-top: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+table, th, td {
+  border: 1px solid #ddd;
+}
+
+th, td {
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f4f4f4;
 }
 </style>

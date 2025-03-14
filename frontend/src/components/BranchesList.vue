@@ -181,6 +181,13 @@ button:hover {
   background-color: #960000;
 }
 
+input {
+  padding: 5px;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  width: calc(100% - 12px);
+}
+
 button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
