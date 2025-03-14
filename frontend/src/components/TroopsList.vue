@@ -15,10 +15,41 @@
       <tbody>
       <tr v-for="troop in troops" :key="troop.id">
         <td>{{ troop.id }}</td>
-        <td>{{ troop.name }}</td>
-        <td>{{ getBranchName(troop.branch_id) }}</td>
+        <td>
+          <!-- Если сейчас редактируем этот вид войск -->
+          <div v-if="editTroopId === troop.id">
+            <input v-model="editTroopName" />
+          </div>
+          <!-- Если не редактируем -->
+          <div v-else>
+            {{ troop.name }}
+          </div>
+        </td>
+        <td>
+          <!-- Если сейчас редактируем этот вид войск -->
+          <div v-if="editTroopId === troop.id">
+            <select v-model="editBranchId">
+              <option v-for="branch in branches" :key="branch.id" :value="branch.id">
+                {{ branch.name }}
+              </option>
+            </select>
+          </div>
+          <!-- Если не редактируем -->
+          <div v-else>
+            {{ getBranchName(troop.branch_id) }}
+          </div>
+        </td>
         <td v-if="user">
-          <button class="button-delete" @click="deleteTroop(troop.id)">Удалить</button>
+          <!-- Если редактируем -->
+          <div v-if="editTroopId === troop.id">
+            <button @click="updateTroop(troop.id)">Сохранить</button>
+            <button @click="cancelEdit">Отмена</button>
+          </div>
+          <!-- Если не редактируем -->
+          <div v-else>
+            <button @click="startEdit(troop)">Редактировать</button>
+            <button class="button-delete" @click="deleteTroop(troop.id)">Удалить</button>
+          </div>
         </td>
       </tr>
       </tbody>
@@ -50,7 +81,10 @@ export default {
       troops: [],
       branches: [],
       newTroopName: '',
-      selectedBranchId: ''
+      selectedBranchId: '',
+      editTroopId: null,
+      editTroopName: '',
+      editBranchId: ''
     };
   },
   methods: {
@@ -115,6 +149,50 @@ export default {
           alert('Ошибка при удалении. Проверьте права доступа.');
         }
       }
+    },
+    // Начать редактирование
+    startEdit(troop) {
+      this.editTroopId = troop.id;
+      this.editTroopName = troop.name;
+      this.editBranchId = troop.branch_id;
+    },
+    // Отмена редактирования
+    cancelEdit() {
+      this.editTroopId = null;
+      this.editTroopName = '';
+      this.editBranchId = '';
+    },
+    // Обновить вид войск
+    async updateTroop(troopId) {
+      if (!this.editTroopName.trim() || !this.editBranchId) {
+        alert('Заполните все поля!');
+        return;
+      }
+
+      try {
+        const token = JSON.parse(localStorage.getItem('user')).token;
+
+        // Используем query параметры как в примере
+        const params = new URLSearchParams();
+        params.append('name', this.editTroopName);
+        params.append('branch_id', this.editBranchId);
+
+        await axios.patch(`http://127.0.0.1:8000/troops/${troopId}?${params.toString()}`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Сбросить состояние редактирования
+        this.editTroopId = null;
+        this.editTroopName = '';
+        this.editBranchId = '';
+
+        // Перезагрузить список
+        this.fetchData();
+
+      } catch (error) {
+        console.error('Ошибка при редактировании вида войск:', error);
+        alert('Ошибка при редактировании. Проверьте данные и права доступа.');
+      }
     }
   },
   mounted() {
@@ -140,7 +218,7 @@ input, select {
   padding: 5px;
   margin-right: 10px;
   margin-bottom: 10px;
-  width: calc(50% - 12px);
+  width: calc(100% - 12px);
 }
 
 button {
@@ -150,6 +228,7 @@ button {
   color: white;
   border-radius: 4px;
   cursor: pointer;
+  margin: 4px 2px;
 }
 
 button:hover {

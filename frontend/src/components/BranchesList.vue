@@ -43,6 +43,7 @@
 
   <!-- Форма добавления (если есть токен) -->
   <div v-if="user">
+    <h3>Добавить вид войск</h3>
     <input v-model="newBranchName" placeholder="Название рода войск" />
     <button @click="addBranch">Добавить</button>
   </div>
