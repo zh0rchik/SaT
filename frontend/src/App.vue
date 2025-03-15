@@ -18,7 +18,7 @@
     <hr>
 
     <!-- Меню вкладок -->
-    <div class="menu-tabs">
+    <div class="menu-tabs" v-if="!selectedRecruitId">
       <button @click="currentTab = 'branches'" :class="{ active: currentTab === 'branches' }">Роды войск</button>
       <button @click="currentTab = 'troops'" :class="{ active: currentTab === 'troops' }">Виды войск</button>
       <button @click="currentTab = 'recruitments'" :class="{ active: currentTab === 'recruitments' }">Призывники</button>
@@ -27,12 +27,24 @@
 
     <!-- Контент -->
     <div class="content-section">
-      <BranchesList v-if="currentTab === 'branches'" :user="user" />
-      <TroopsList v-if="currentTab === 'troops'" :user="user" />
-      <RecruitmentsList v-if="currentTab === 'recruitments'" :user="user" />
-      <RecruitmentOfficesList v-if="currentTab === 'recruitment_offices'" :user="user" />
-      <LoginPage v-if="currentTab === 'login'" @login="handleLogin" />
-      <RegisterPage v-if="currentTab === 'register'" @register="handleRegister" />
+      <BranchesList v-if="currentTab === 'branches' && !selectedRecruitId" :user="user" />
+      <TroopsList v-if="currentTab === 'troops' && !selectedRecruitId" :user="user" />
+      <RecruitmentsList
+          v-if="currentTab === 'recruitments' && !selectedRecruitId"
+          :user="user"
+          @view-recruit="viewRecruit"
+      />
+      <RecruitmentOfficesList v-if="currentTab === 'recruitment_offices' && !selectedRecruitId" :user="user" />
+      <LoginPage v-if="currentTab === 'login' && !selectedRecruitId" @login="handleLogin" />
+      <RegisterPage v-if="currentTab === 'register' && !selectedRecruitId" @register="handleRegister" />
+
+      <!-- Отдельная страница призывника -->
+      <RecruitmentPage
+          v-if="selectedRecruitId"
+          :recruitId="selectedRecruitId"
+          :user="user"
+          @back="goBackToList"
+      />
     </div>
   </div>
 </template>
@@ -41,9 +53,10 @@
 import BranchesList from '@/components/BranchesList.vue';
 import TroopsList from '@/components/TroopsList.vue';
 import RecruitmentOfficesList from '@/components/RecruitmentOfficesList.vue';
-import RecruitmentsList from '@/components/RecruitmentsList.vue'; // Импортируем новый компонент
+import RecruitmentsList from '@/components/RecruitmentsList.vue';
 import LoginPage from '@/components/LoginPage.vue';
 import RegisterPage from '@/components/RegisterPage.vue';
+import RecruitmentPage from '@/components/RecruitmentPage.vue'; // Импортируем новый компонент
 
 export default {
   name: 'App',
@@ -51,14 +64,16 @@ export default {
     BranchesList,
     TroopsList,
     RecruitmentOfficesList,
-    RecruitmentsList, // Добавляем компонент в список
+    RecruitmentsList,
     LoginPage,
-    RegisterPage
+    RegisterPage,
+    RecruitmentPage // Добавляем компонент в список
   },
   data() {
     return {
       currentTab: 'branches',
-      user: null
+      user: null,
+      selectedRecruitId: null // Добавляем новое состояние для ID выбранного призывника
     };
   },
   methods: {
@@ -86,6 +101,15 @@ export default {
       localStorage.removeItem('user');
       this.user = null;
       this.currentTab = 'branches';
+    },
+    // Метод для перехода на страницу призывника
+    viewRecruit(id) {
+      this.selectedRecruitId = id;
+    },
+    // Метод для возврата к списку призывников
+    goBackToList() {
+      this.selectedRecruitId = null;
+      this.currentTab = 'recruitments';
     }
   },
   mounted() {
@@ -146,103 +170,5 @@ export default {
 
 .content-section {
   margin-top: 20px;
-}
-</style>
-
-
-<style scoped>
-/* Основной контейнер */
-#app {
-  max-width: 900px;
-  margin: auto;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-}
-
-/* Стили для меню вкладок */
-.menu-tabs {
-  margin: 20px 0;
-}
-
-.menu-tabs button {
-  margin-right: 10px;
-  padding: 10px 20px;
-  border: none;
-  background-color: #eee;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.menu-tabs button.active {
-  background-color: #007bff;
-  color: white;
-}
-
-/* Стили для кнопок входа/регистрации */
-.auth-buttons button {
-  margin-right: 10px;
-  padding: 10px 20px;
-  border: none;
-  background-color: #28a745;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.auth-buttons button.active {
-  background-color: #218838;
-}
-
-/* Информация о пользователе */
-.auth-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.auth-info p {
-  margin: 0;
-}
-
-.auth-info button {
-  padding: 6px 12px;
-  border: none;
-  background-color: #dc3545;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.auth-info button:hover {
-  background-color: #c82333;
-}
-
-/* Основной контент */
-.content-section {
-  margin-top: 20px;
-}
-
-/* Ошибки */
-.error {
-  color: red;
-  margin-top: 10px;
-  text-align: center;
-  font-weight: bold;
-}
-
-table, th, td {
-  border: 1px solid #ddd;
-}
-
-th, td {
-  padding: 8px;
-  text-align: left;
-}
-
-th {
-  background-color: #f4f4f4;
 }
 </style>

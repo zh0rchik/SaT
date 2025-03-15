@@ -25,7 +25,12 @@
       <tbody>
       <tr v-for="recruit in recruitments" :key="recruit.id">
         <td>{{ recruit.id }}</td>
-        <td>{{ recruit.name || 'Не указано' }}</td>
+        <td>
+          <!-- Добавляем ссылку на страницу призывника -->
+          <a href="#" @click.prevent="viewRecruit(recruit.id)" class="recruit-link">
+            {{ recruit.name || 'Не указано' }}
+          </a>
+        </td>
         <td>{{ recruit.address || 'Не указано' }}</td>
         <td>{{ formatDate(recruit.date_of_birth) }}</td>
         <td>{{ recruit.marital_status ? 'Женат' : 'Холост' }}</td>
@@ -127,7 +132,8 @@ import { ref, reactive, onMounted } from 'vue';
 export default {
   name: 'RecruitmentsList',
   props: ['user'],
-  setup(props) {
+  emits: ['view-recruit'],
+  setup(props, { emit }) {
     const recruitments = ref([]);
     const loading = ref(true);
     const error = ref(null);
@@ -146,6 +152,11 @@ export default {
       marital_status: false,
       recruitment_office_id: null
     });
+
+    // Функция для перехода на страницу призывника
+    const viewRecruit = (id) => {
+      emit('view-recruit', id);
+    };
 
     // Функция получения токена
     const getToken = () => {
@@ -391,6 +402,7 @@ export default {
       formSuccess,
       submitting,
       recruitmentOffices,
+      viewRecruit // Добавляем новый метод для перехода на страницу призывника
     };
   }
 };
@@ -516,5 +528,17 @@ button:disabled {
 .add-form-container h3 {
   margin-top: 0;
   margin-bottom: 15px;
+}
+
+/* Стиль для ссылки на страницу призывника */
+.recruit-link {
+  color: #007bff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.recruit-link:hover {
+  text-decoration: underline;
+  color: #0056b3;
 }
 </style>
