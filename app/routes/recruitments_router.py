@@ -121,7 +121,7 @@ async def update_recruitment(
 
     if troop_id:
         troop = await troops_routes.get_troop_by_id(db=db, troop_id=troop_id)
-        medexams_recruit = await medexams_routes.get_medexams_of_recruits(recruit_id=recruitment_id, db=db)
+        medexams_recruit = await medexams_routes.get_medexams_of_recruits(recruitment_id=recruitment_id, db=db)
 
         if medexams_recruit:
             last_medexam = medexams_recruit[-1]

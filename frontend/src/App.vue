@@ -21,6 +21,7 @@
     <div class="menu-tabs">
       <button @click="currentTab = 'branches'" :class="{ active: currentTab === 'branches' }">Роды войск</button>
       <button @click="currentTab = 'troops'" :class="{ active: currentTab === 'troops' }">Виды войск</button>
+      <button @click="currentTab = 'recruitments'" :class="{ active: currentTab === 'recruitments' }">Призывники</button>
       <button @click="currentTab = 'recruitment_offices'" :class="{ active: currentTab === 'recruitment_offices' }">Призывные пункты</button>
     </div>
 
@@ -28,6 +29,7 @@
     <div class="content-section">
       <BranchesList v-if="currentTab === 'branches'" :user="user" />
       <TroopsList v-if="currentTab === 'troops'" :user="user" />
+      <RecruitmentsList v-if="currentTab === 'recruitments'" :user="user" />
       <RecruitmentOfficesList v-if="currentTab === 'recruitment_offices'" :user="user" />
       <LoginPage v-if="currentTab === 'login'" @login="handleLogin" />
       <RegisterPage v-if="currentTab === 'register'" @register="handleRegister" />
@@ -39,6 +41,7 @@
 import BranchesList from '@/components/BranchesList.vue';
 import TroopsList from '@/components/TroopsList.vue';
 import RecruitmentOfficesList from '@/components/RecruitmentOfficesList.vue';
+import RecruitmentsList from '@/components/RecruitmentsList.vue'; // Импортируем новый компонент
 import LoginPage from '@/components/LoginPage.vue';
 import RegisterPage from '@/components/RegisterPage.vue';
 
@@ -48,6 +51,7 @@ export default {
     BranchesList,
     TroopsList,
     RecruitmentOfficesList,
+    RecruitmentsList, // Добавляем компонент в список
     LoginPage,
     RegisterPage
   },

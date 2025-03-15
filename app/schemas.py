@@ -76,13 +76,13 @@ class RecruitmentCreateSchema(BaseModel):
     date_of_birth: date
     address: str
     marital_status: bool = False
-    recruitment_office_id: int
+    recruitment_office_id: Optional[int] = None
 
 DEFAULT_AVATAR = "/static/uploads/avatar.jpg"
 class RecruitmentSchema(RecruitmentCreateSchema):
     id: int
     photo: Optional[str] = DEFAULT_AVATAR
-    troop_id: Optional[int]
+    troop_id: Optional[int] = None
 
     class Config:
         from_attributes = True
