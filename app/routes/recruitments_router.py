@@ -128,9 +128,9 @@ async def update_recruitment(
             if last_medexam.result == "годен к строевой службе":
                 recruit.troop_id = troop.id
             else:
-                raise HTTPException(status_code=404, detail="Призывнику необходимо пройти мед. комиссию")
+                raise HTTPException(status_code=400, detail="Призывнику необходимо пройти мед. комиссию")
         else:
-            raise HTTPException(status_code=404, detail="У призывника нет записей о мед. комиссиях")
+            raise HTTPException(status_code=400, detail="У призывника нет записей о мед. комиссиях")
 
     if name:
         recruit.name = name

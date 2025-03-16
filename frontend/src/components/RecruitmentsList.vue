@@ -20,13 +20,13 @@
         <th>Семейное положение</th>
         <th>Призывной пункт</th>
         <th>Род войск</th>
+        <th>Действия</th>
       </tr>
       </thead>
       <tbody>
       <tr v-for="recruit in recruitments" :key="recruit.id">
         <td>{{ recruit.id }}</td>
         <td>
-          <!-- Добавляем ссылку на страницу призывника -->
           <a href="#" @click.prevent="viewRecruit(recruit.id)" class="recruit-link">
             {{ recruit.name || 'Не указано' }}
           </a>
@@ -36,9 +36,14 @@
         <td>{{ recruit.marital_status ? 'Женат' : 'Холост' }}</td>
         <td>{{ getRecruitmentOfficeInfo(recruit.recruitment_office_id) }}</td>
         <td>{{ getTroopInfo(recruit.troop_id) }}</td>
+        <td>
+          <button @click="deleteRecruit(recruit.id)" class="delete-button">
+            Удалить
+          </button>
+        </td>
       </tr>
       <tr v-if="recruitments.length === 0">
-        <td colspan="7" class="no-data">Нет данных</td>
+        <td colspan="8" class="no-data">Нет данных</td>
       </tr>
       </tbody>
     </table>
@@ -344,6 +349,30 @@ export default {
       }
     };
 
+    // Функция удаления призывника
+    const deleteRecruit = async (id) => {
+      const token = getToken();
+      if (!token) {
+        alert('Необходима авторизация для удаления');
+        return;
+      }
+
+      try {
+        await axios.delete(`http://127.0.0.1:8000/recruitments/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        // Удаляем призывника из списка после успешного запроса
+        recruitments.value = recruitments.value.filter(r => r.id !== id);
+
+      } catch (err) {
+        console.error(`Ошибка при удалении призывника ID=${id}:`, err);
+        alert('Ошибка при удалении призывника');
+      }
+    };
+
     const getRecruitmentOfficeInfo = (id) => {
       if (id === null || id === undefined) return 'Не прикреплён';
       if (!officesCache[id]) return 'Загрузка...';
@@ -402,7 +431,8 @@ export default {
       formSuccess,
       submitting,
       recruitmentOffices,
-      viewRecruit // Добавляем новый метод для перехода на страницу призывника
+      viewRecruit, // Добавляем новый метод для перехода на страницу призывника
+      deleteRecruit
     };
   }
 };
@@ -540,5 +570,19 @@ button:disabled {
 .recruit-link:hover {
   text-decoration: underline;
   color: #0056b3;
+}
+
+.delete-button {
+  background-color: #e74c3c;
+  color: white;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.delete-button:hover {
+  background-color: #c0392b;
 }
 </style>
