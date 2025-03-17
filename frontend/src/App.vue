@@ -5,7 +5,7 @@
 
     <!-- Отображение имени пользователя после входа -->
     <div v-if="user" class="auth-info">
-      <p>Вы вошли как: <strong>{{ user.username }}</strong></p>
+      <p><strong>{{ user.username }}</strong></p>
       <button @click="logout">Выйти</button>
     </div>
 
@@ -35,8 +35,8 @@
           @view-recruit="viewRecruit"
       />
       <RecruitmentOfficesList v-if="currentTab === 'recruitment_offices' && !selectedRecruitId" :user="user" />
-      <LoginPage v-if="currentTab === 'login' && !selectedRecruitId" @login="handleLogin" />
-      <RegisterPage v-if="currentTab === 'register' && !selectedRecruitId" @register="handleRegister" />
+      <LoginPage v-if="currentTab === 'login'" @login="handleLogin" />
+      <RegisterPage v-if="currentTab === 'register'" @register="handleRegister" />
 
       <!-- Отдельная страница призывника -->
       <RecruitmentPage
