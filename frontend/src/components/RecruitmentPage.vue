@@ -81,10 +81,10 @@
           <input id="date_of_birth" v-model="editForm.date_of_birth" type="date" />
         </div>
 
-        <div class="form-group checkbox">
-          <input id="marital_status" v-model="editForm.marital_status" type="checkbox" />
-          <label for="marital_status">Женат</label>
-        </div>
+        <select id="marital_status" :value="editForm.marital_status" @change="handleMaritalStatusChange">
+          <option value="false">Холост</option>
+          <option value="true">Женат</option>
+        </select>
 
         <div class="form-group">
           <label for="recruitment_office_id">Призывной пункт:</label>
@@ -147,272 +147,205 @@ export default {
     const recruitmentOffices = ref([]);
     const troops = ref([]);
 
-    // Переменные для загрузки фото (упрощенный вариант)
-    const selectedPhoto = ref(null);
-
     // Форма редактирования
     const editForm = reactive({
       name: '',
       address: '',
       date_of_birth: '',
-      marital_status: false,
+      marital_status: false, // Изначально холост
       recruitment_office_id: null,
       troop_id: null
     });
 
+
+    // Загрузка данных призывника
     const fetchRecruitment = async () => {
       loading.value = true;
       error.value = null;
-
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/recruitments/${props.recruitId}`, {
-          timeout: 5000
-        });
+        const response = await axios.get(`http://127.0.0.1:8000/recruitments/${props.recruitId}`);
         recruit.value = response.data;
 
-        // Загружаем данные о призывном пункте и роде войск, если у призывника есть эти ID
-        if (recruit.value.recruitment_office_id) {
-          fetchRecruitmentOffice(recruit.value.recruitment_office_id);
+        // Обновляем форму данными
+        editForm.name = response.data.name || '';
+        editForm.address = response.data.address || '';
+        editForm.date_of_birth = response.data.date_of_birth || '';
+        editForm.marital_status = Boolean(response.data.marital_status);
+        editForm.recruitment_office_id = response.data.recruitment_office_id || null;
+        editForm.troop_id = response.data.troop_id || null;
+
+        // Получаем связанные данные, если они есть
+        if (response.data.recruitment_office_id) {
+          try {
+            const officeResponse = await axios.get(`http://127.0.0.1:8000/recruitment_offices/${response.data.recruitment_office_id}`);
+            recruitmentOffice.value = officeResponse.data;
+          } catch (officeErr) {
+            console.error('Ошибка при загрузке данных призывного пункта:', officeErr);
+          }
         }
 
-        if (recruit.value.troop_id) {
-          fetchTroop(recruit.value.troop_id);
+        if (response.data.troop_id) {
+          try {
+            const troopResponse = await axios.get(`http://127.0.0.1:8000/troops/${response.data.troop_id}`);
+            troop.value = troopResponse.data;
+          } catch (troopErr) {
+            console.error('Ошибка при загрузке данных о роде войск:', troopErr);
+          }
         }
       } catch (err) {
         console.error('Ошибка при загрузке данных призывника:', err);
-        if (err.code === 'ECONNABORTED') {
-          error.value = 'Превышено время ожидания ответа от сервера';
-        } else if (err.response) {
-          error.value = `Ошибка сервера: ${err.response.status} - ${err.response.data?.detail || 'Неизвестная ошибка'}`;
-        } else if (err.request) {
-          error.value = 'Не удалось соединиться с сервером. Проверьте, что сервер запущен и доступен.';
-        } else {
-          error.value = `Ошибка: ${err.message}`;
-        }
+        error.value = 'Ошибка при загрузке данных призывника.';
       } finally {
         loading.value = false;
       }
     };
 
-    const fetchRecruitmentOffice = async (id) => {
+    const handleMaritalStatusChange = (event) => {
+      editForm.marital_status = event.target.value === 'true'; // точно преобразуем в boolean
+    };
+
+
+    // Загрузка списков для выбора
+    const fetchOfficesAndTroops = async () => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/recruitment_offices/${id}`, {
-          timeout: 3000
-        });
-        recruitmentOffice.value = response.data;
+        const [officesRes, troopsRes] = await Promise.all([
+          axios.get('http://127.0.0.1:8000/recruitment_offices/'),
+          axios.get('http://127.0.0.1:8000/troops/')
+        ]);
+        recruitmentOffices.value = officesRes.data;
+        troops.value = troopsRes.data;
       } catch (err) {
-        console.error('Ошибка при загрузке данных о призывном пункте:', err);
-        recruitmentOffice.value = { address: 'Ошибка загрузки', chief_name: 'Недоступно' };
+        console.error('Ошибка при загрузке списков:', err);
+        updateError.value = 'Ошибка при загрузке списков офисов и родов войск.';
       }
     };
 
-    const fetchTroop = async (id) => {
-      try {
-        const response = await axios.get(`http://127.0.0.1:8000/troops/${id}`, {
-          timeout: 3000
-        });
-        troop.value = response.data;
-      } catch (err) {
-        console.error('Ошибка при загрузке данных о роде войск:', err);
-        troop.value = { name: 'Не определён' };
-      }
-    };
-
-    const fetchAllRecruitmentOffices = async () => {
-      try {
-        const response = await axios.get('http://127.0.0.1:8000/recruitment_offices/', {
-          timeout: 5000
-        });
-        recruitmentOffices.value = response.data;
-      } catch (err) {
-        console.error('Ошибка при загрузке списка призывных пунктов:', err);
-        updateError.value = 'Не удалось загрузить список призывных пунктов';
-      }
-    };
-
-    const fetchAllTroops = async () => {
-      try {
-        const response = await axios.get('http://127.0.0.1:8000/troops/', {
-          timeout: 5000
-        });
-        troops.value = response.data;
-      } catch (err) {
-        console.error('Ошибка при загрузке списка родов войск:', err);
-        updateError.value = 'Не удалось загрузить список родов войск';
-      }
-    };
-
-    const formatDate = (dateString) => {
-      if (!dateString) return 'Не указано';
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ru-RU');
-    };
-
-    const getPhotoUrl = (photoPath) => {
-      if (!photoPath) return 'http://127.0.0.1:8000/static/uploads/avatar.jpg';
-      // Если фото сохранено с относительным путем, подставляем домен
-      return `http://127.0.0.1:8000${photoPath}`;
-    };
-
-    const goBack = () => {
-      emit('back');
-    };
-
+    // Открыть модальное окно
     const openEditModal = async () => {
-      // Сбрасываем ошибки и сообщения об успехе
-      updateError.value = null;
-      updateSuccess.value = null;
-
-      // Загружаем данные для выпадающих списков
-      await Promise.all([
-        fetchAllRecruitmentOffices(),
-        fetchAllTroops()
-      ]);
-
-      // Заполняем форму текущими данными
-      editForm.name = recruit.value.name || '';
-      editForm.address = recruit.value.address || '';
-      editForm.date_of_birth = recruit.value.date_of_birth || '';
-      editForm.marital_status = recruit.value.marital_status || false;
-      editForm.recruitment_office_id = recruit.value.recruitment_office_id || null;
-      editForm.troop_id = recruit.value.troop_id || null;
-
-      // Открываем модальное окно
-      showEditModal.value = true;
+      try {
+        await fetchOfficesAndTroops();
+        showEditModal.value = true;
+        updateError.value = null;
+        updateSuccess.value = null;
+      } catch (err) {
+        console.error('Ошибка при открытии модального окна:', err);
+      }
     };
 
     const closeEditModal = () => {
       showEditModal.value = false;
     };
 
-    const closeModalOnOverlay = (event) => {
-      if (event.target.classList.contains('modal-overlay')) {
-        if (showEditModal.value) closeEditModal();
+    const closeModalOnOverlay = (e) => {
+      if (e.target === e.currentTarget) {
+        closeEditModal();
       }
     };
 
-    const getToken = () => {
-      if (props.user && props.user.token) {
-        return props.user.token;
-      }
-      return null;
-    };
-
+    // Сохранить изменения - исправляем обработку marital_status
     const submitUpdate = async () => {
-      updateError.value = null;
-      updateSuccess.value = null;
-      updating.value = true;
-
-      const token = getToken();
-      if (!token) {
-        updateError.value = 'Необходима авторизация для внесения изменений';
-        updating.value = false;
+      if (!props.user || !props.user.token) {
+        updateError.value = 'Необходима авторизация для внесения изменений.';
         return;
       }
 
-      try {
-        // Формируем данные для отправки как URL-параметры
-        const params = new URLSearchParams();
-        if (editForm.name !== recruit.value.name) params.append('name', editForm.name);
-        if (editForm.address !== recruit.value.address) params.append('address', editForm.address);
-        if (editForm.date_of_birth !== recruit.value.date_of_birth) params.append('date_of_birth', editForm.date_of_birth);
-        if (editForm.marital_status !== recruit.value.marital_status) params.append('marital_status', editForm.marital_status);
-        if (editForm.recruitment_office_id !== recruit.value.recruitment_office_id) params.append('recruitment_office_id', editForm.recruitment_office_id);
-        if (editForm.troop_id !== recruit.value.troop_id) params.append('troop_id', editForm.troop_id);
+      updating.value = true;
+      updateError.value = null;
+      updateSuccess.value = null;
 
-        // Отправляем запрос на обновление с параметрами в URL
-        const response = await axios.patch(
-            `http://127.0.0.1:8000/recruitments/${props.recruitId}?${params.toString()}`,
-            {}, // Пустой объект, так как данные уже в URL
+      try {
+        // Создаем URL с параметрами запроса вместо тела запроса
+        const params = new URLSearchParams();
+
+        // Добавляем все поля, даже если они не изменились
+        params.append('name', editForm.name || '');
+        params.append('address', editForm.address || '');
+        if (editForm.date_of_birth) params.append('date_of_birth', editForm.date_of_birth);
+
+        params.append('marital_status', editForm.marital_status ? 'true' : 'false');
+
+        if (editForm.troop_id) params.append('troop_id', editForm.troop_id);
+        if (editForm.recruitment_office_id) params.append('recruitment_office_id', editForm.recruitment_office_id);
+
+        console.log('Sending params:', Object.fromEntries(params.entries()));
+
+        const url = `http://127.0.0.1:8000/recruitments/${props.recruitId}?${params.toString()}`;
+
+        await axios.patch(
+            url,
+            {}, // Пустое тело запроса, так как все данные в URL
             {
-              timeout: 5000,
               headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${props.user.token}`
               }
             }
         );
 
-        // Обновляем данные в компоненте
-        recruit.value = response.data;
-
-        // Обновляем связанные данные при необходимости
-        if (response.data.recruitment_office_id !== recruitmentOffice.value?.id) {
-          fetchRecruitmentOffice(response.data.recruitment_office_id);
-        }
-
-        if (response.data.troop_id !== troop.value?.id) {
-          fetchTroop(response.data.troop_id);
-        }
-
-        updateSuccess.value = 'Данные успешно обновлены';
-
-        // Закрываем модальное окно через 1.5 секунды
+        updateSuccess.value = 'Данные успешно обновлены!';
+        await fetchRecruitment(); // Перезагрузка данных
         setTimeout(() => {
           closeEditModal();
-        }, 1500);
-
+        }, 1000);
       } catch (err) {
         console.error('Ошибка при обновлении данных:', err);
-
-        if (err.response && err.response.status === 400) {
-          updateError.value = 'Призывнику необходимо пройти мед. комиссию';
-        } else if (err.response && err.response.status === 401) {
-          updateError.value = 'Ошибка авторизации. Возможно, срок действия токена истек';
-        } else if (err.response && err.response.status === 422) {
-          updateError.value = 'Ошибка валидации данных. Проверьте правильность заполнения формы';
-        } else if (err.code === 'ECONNABORTED') {
-          updateError.value = 'Превышено время ожидания ответа от сервера';
-        } else if (err.request) {
-          updateError.value = 'Не удалось соединиться с сервером. Проверьте подключение к интернету';
-        } else {
-          updateError.value = `Произошла ошибка: ${err.message || 'Неизвестная ошибка'}`;
+        if (err.response?.data) {
+          console.error('Детали ошибки:', err.response.data);
         }
+        updateError.value = err.response?.data?.detail || 'Ошибка при обновлении данных. Убедитесь, что все поля заполнены корректно.';
       } finally {
         updating.value = false;
       }
     };
 
-    // Функция для автоматической загрузки фото
+    // Работа с фото
+    const getPhotoUrl = (photoPath) => {
+      if (!photoPath) return '/default-avatar.png';
+      return photoPath.startsWith('http') ? photoPath : `http://127.0.0.1:8000${photoPath}`;
+    };
+
     const onPhotoSelectedAndUpload = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
 
-      selectedPhoto.value = file;
-
-      const token = getToken();
-      if (!token) {
+      if (!props.user || !props.user.token) {
+        alert('Необходима авторизация для загрузки фото.');
         return;
       }
 
-      try {
-        // Создаем FormData для отправки файла
-        const formData = new FormData();
-        formData.append('photo', file);
+      const formData = new FormData();
+      formData.append('photo', file); // Используем 'photo' вместо 'file'
 
-        // Отправляем запрос на загрузку фото
-        const response = await axios.post(
+      try {
+        await axios.post(
             `http://127.0.0.1:8000/recruitments/upload_avatar/${props.recruitId}`,
             formData,
             {
-              timeout: 10000,
               headers: {
-                'Authorization': `Bearer ${token}`,
+                'Authorization': `Bearer ${props.user.token}`,
                 'Content-Type': 'multipart/form-data'
               }
             }
         );
-
-        // Обновляем данные в компоненте
-        recruit.value.photo = response.data.photo_url;
-
+        await fetchRecruitment(); // Обновить данные после загрузки фото
       } catch (err) {
         console.error('Ошибка при загрузке фото:', err);
-
-      } finally {
-        event.target.value = '';
+        alert('Ошибка при загрузке фото: ' + (err.response?.data?.detail || err.message));
       }
     };
 
+    // Навигация назад
+    const goBack = () => emit('back');
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return 'Не указано';
+      try {
+        return new Date(dateStr).toLocaleDateString();
+      } catch (e) {
+        return dateStr;
+      }
+    };
+
+    // Загрузка данных при монтировании компонента
     onMounted(() => {
       fetchRecruitment();
     });
@@ -423,28 +356,28 @@ export default {
       troop,
       loading,
       error,
-      formatDate,
-      getPhotoUrl,
-      goBack,
       showEditModal,
-      openEditModal,
-      closeEditModal,
-      closeModalOnOverlay,
-      editForm,
       updating,
       updateError,
       updateSuccess,
-      submitUpdate,
       recruitmentOffices,
       troops,
-      // Переменные для загрузки фото
-      selectedPhoto,
+      editForm,
+      openEditModal,
+      closeEditModal,
+      closeModalOnOverlay,
+      submitUpdate,
+      getPhotoUrl,
       onPhotoSelectedAndUpload,
-      fetchRecruitment
+      goBack,
+      formatDate,
+      fetchRecruitment,
+      handleMaritalStatusChange
     };
   }
-}
+};
 </script>
+
 
 <style scoped>
 /* Основной контейнер */
