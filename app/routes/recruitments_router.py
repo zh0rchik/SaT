@@ -141,7 +141,7 @@ async def update_recruitment(
     if date_of_birth:
         recruit.date_of_birth = date_of_birth
 
-    if marital_status:
+    if marital_status is not None:
         recruit.marital_status = marital_status
 
     await db.commit()

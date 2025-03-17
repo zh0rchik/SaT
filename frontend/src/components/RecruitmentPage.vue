@@ -81,10 +81,13 @@
           <input id="date_of_birth" v-model="editForm.date_of_birth" type="date" />
         </div>
 
-        <select id="marital_status" :value="editForm.marital_status" @change="handleMaritalStatusChange">
-          <option value="false">Холост</option>
-          <option value="true">Женат</option>
-        </select>
+        <div class="form-group">
+          <label for="marital_status">Семейное положение:</label>
+          <select id="marital_status" v-model="editForm.marital_status">
+            <option :value="false">Холост</option>
+            <option :value="true">Женат</option>
+          </select>
+        </div>
 
         <div class="form-group">
           <label for="recruitment_office_id">Призывной пункт:</label>
@@ -201,7 +204,7 @@ export default {
     };
 
     const handleMaritalStatusChange = (event) => {
-      editForm.marital_status = event.target.value === 'true'; // точно преобразуем в boolean
+      editForm.marital_status = event.target.value === 'false'; // точно преобразуем в boolean
     };
 
 
