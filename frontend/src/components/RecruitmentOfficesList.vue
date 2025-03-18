@@ -7,8 +7,12 @@
       <thead>
       <tr style="background: #f4f4f4">
         <th>№</th>
-        <th>Адрес</th>
-        <th>Начальник</th>
+        <th @click="sort('address')" class="sortable" :class="{'asc': sortField === 'address' && sortOrder === 'asc', 'desc': sortField === 'address' && sortOrder === 'desc'}">
+          Адрес
+        </th>
+        <th @click="sort('chief_name')" class="sortable" :class="{'asc': sortField === 'chief_name' && sortOrder === 'asc', 'desc': sortField === 'chief_name' && sortOrder === 'desc'}">
+          Начальник
+        </th>
         <th v-if="user">Действия</th>
         <th>Режим работы</th>
       </tr>
@@ -142,13 +146,39 @@ export default {
       // Состояния модальных окон
       showAddModal: false,
       showEditModal: false,
-      showWorkModeModal: false
+      showWorkModeModal: false,
+      // Добавляем переменные для сортировки
+      sortField: '',
+      sortOrder: 'asc'
     };
   },
   methods: {
+    // Функция для сортировки
+    sort(field) {
+      if (this.sortField === field) {
+        // Если уже сортируем по этому полю, меняем порядок
+        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        // Если новое поле, устанавливаем его и сбрасываем порядок на 'asc'
+        this.sortField = field;
+        this.sortOrder = 'asc';
+      }
+
+      // Перезагружаем данные с новыми параметрами сортировки
+      this.fetchOffices();
+    },
+
     async fetchOffices() {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/recruitment_offices/');
+        // Формируем URL с параметрами сортировки
+        let url = 'http://127.0.0.1:8000/recruitment_offices/';
+
+        // Добавляем параметры сортировки, если они заданы
+        if (this.sortField) {
+          url += `?sort_by=${this.sortField}&order=${this.sortOrder}`;
+        }
+
+        const response = await axios.get(url);
         const offices = response.data;
 
         // Запрашиваем режимы работы для каждого офиса
@@ -445,5 +475,33 @@ tbody tr:nth-child(even) {
 }
 tbody tr:hover {
   background-color: #d1e7fd; /* Голубой оттенок при наведении */
+}
+
+/* Стили для сортируемых заголовков */
+th.sortable {
+  cursor: pointer;
+  position: relative;
+  padding-right: 20px; /* Место для стрелки */
+  transition: background-color 0.3s;
+}
+
+th.sortable:hover {
+  background-color: #d1e7fd;
+}
+
+th.sortable:after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+th.sortable.asc:after {
+  content: '↑';
+}
+
+th.sortable.desc:after {
+  content: '↓';
 }
 </style>

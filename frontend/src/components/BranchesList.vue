@@ -5,12 +5,7 @@
     <table>
       <thead>
       <tr style="background: #f4f4f4">
-        <th @click="sortTable('id')">
-          №
-          <span v-if="sortBy === 'id'">
-            <i :class="sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'"></i>
-          </span>
-        </th>
+        <th>№</th>
         <th @click="sortTable('name')">
           Название рода войск
           <span v-if="sortBy === 'name'">

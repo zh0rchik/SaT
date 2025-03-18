@@ -5,7 +5,7 @@
     <table>
       <thead>
       <tr style="background: #f4f4f4">
-        <th @click="sort('id')" style="cursor: pointer" :class="{'sortable': true, 'asc': sortField === 'id' && sortOrder === 'asc', 'desc': sortField === 'id' && sortOrder === 'desc'}">№</th>
+        <th>№</th>
         <th @click="sort('name')" style="cursor: pointer" :class="{'sortable': true, 'asc': sortField === 'name' && sortOrder === 'asc', 'desc': sortField === 'name' && sortOrder === 'desc'}">Название вида войск</th>
         <th @click="sort('branch_id')" style="cursor: pointer" :class="{'sortable': true, 'asc': sortField === 'branch_id' && sortOrder === 'asc', 'desc': sortField === 'branch_id' && sortOrder === 'desc'}">Род войск</th>
         <th v-if="user">Действия</th>
@@ -180,16 +180,21 @@ export default {
 
       try {
         const token = JSON.parse(localStorage.getItem('user')).token;
-        await axios.patch(`http://127.0.0.1:8000/troops/${troopId}`, {
-          name: this.editTroopName,
-          branch_id: this.editBranchId
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+
+        // Используем URL параметры вместо тела запроса
+        await axios.patch(
+            `http://127.0.0.1:8000/troops/${troopId}?name=${encodeURIComponent(this.editTroopName)}&branch_id=${this.editBranchId}`,
+            {}, // Пустое тело запроса
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+        );
+
         this.fetchData();
         this.closeEditModal();
       } catch (error) {
         console.error('Ошибка при обновлении:', error);
+        alert('Произошла ошибка при обновлении данных');
       }
     }
   },

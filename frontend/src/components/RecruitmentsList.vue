@@ -20,12 +20,24 @@
         <thead>
         <tr>
           <th>№</th>
-          <th>Имя</th>
-          <th>Адрес</th>
-          <th>Дата рождения</th>
-          <th>Семейное положение</th>
-          <th>Призывной пункт</th>
-          <th>Род войск</th>
+          <th @click="sort('name')" class="sortable" :class="{'asc': sortField === 'name' && sortOrder === 'asc', 'desc': sortField === 'name' && sortOrder === 'desc'}">
+            Имя
+          </th>
+          <th @click="sort('address')" class="sortable" :class="{'asc': sortField === 'address' && sortOrder === 'asc', 'desc': sortField === 'address' && sortOrder === 'desc'}">
+            Адрес
+          </th>
+          <th @click="sort('date_of_birth')" class="sortable" :class="{'asc': sortField === 'date_of_birth' && sortOrder === 'asc', 'desc': sortField === 'date_of_birth' && sortOrder === 'desc'}">
+            Дата рождения
+          </th>
+          <th @click="sort('marital_status')" class="sortable" :class="{'asc': sortField === 'marital_status' && sortOrder === 'asc', 'desc': sortField === 'marital_status' && sortOrder === 'desc'}">
+            Семейное положение
+          </th>
+          <th @click="sort('recruitment_office_id')" class="sortable" :class="{'asc': sortField === 'recruitment_office_id' && sortOrder === 'asc', 'desc': sortField === 'recruitment_office_id' && sortOrder === 'desc'}">
+            Призывной пункт
+          </th>
+          <th @click="sort('troop_id')" class="sortable" :class="{'asc': sortField === 'troop_id' && sortOrder === 'asc', 'desc': sortField === 'troop_id' && sortOrder === 'desc'}">
+            Род войск
+          </th>
           <th>Действия</th>
         </tr>
         </thead>
@@ -161,6 +173,9 @@ export default {
     const formError = ref(null);
     const formSuccess = ref(null);
     const showModal = ref(false);
+    // Добавляем переменные для сортировки
+    const sortField = ref('');
+    const sortOrder = ref('asc');
 
     // Новый объект для формы добавления призывника
     const newRecruit = reactive({
@@ -170,6 +185,21 @@ export default {
       marital_status: false,
       recruitment_office_id: null
     });
+
+    // Функция для сортировки
+    const sort = (field) => {
+      if (sortField.value === field) {
+        // Если уже сортируем по этому полю, меняем порядок
+        sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+      } else {
+        // Если новое поле, устанавливаем его и сбрасываем порядок на 'asc'
+        sortField.value = field;
+        sortOrder.value = 'asc';
+      }
+
+      // Перезагружаем данные с новыми параметрами сортировки
+      fetchRecruitments();
+    };
 
     // Функция для открытия модального окна
     const openModal = () => {
@@ -285,8 +315,16 @@ export default {
       error.value = null;
 
       try {
+        // Формируем URL с параметрами сортировки
+        let url = 'http://127.0.0.1:8000/recruitments/';
+
+        // Добавляем параметры сортировки, если они заданы
+        if (sortField.value) {
+          url += `?sort_by=${sortField.value}&order=${sortOrder.value}`;
+        }
+
         // Добавляем обработку timeout для предотвращения вечной загрузки
-        const response = await axios.get('http://127.0.0.1:8000/recruitments/', {
+        const response = await axios.get(url, {
           timeout: 5000,
         });
 
@@ -464,7 +502,11 @@ export default {
       deleteRecruit,
       showModal,
       openModal,
-      closeModal
+      closeModal,
+      // Добавляем новые переменные и функции для сортировки
+      sortField,
+      sortOrder,
+      sort
     };
   }
 };
@@ -485,6 +527,34 @@ th, td {
 
 th {
   background-color: #f4f4f4;
+}
+
+/* Стили для сортируемых заголовков */
+th.sortable {
+  cursor: pointer;
+  position: relative;
+  padding-right: 20px; /* Место для стрелки */
+  transition: background-color 0.3s;
+}
+
+th.sortable:hover {
+  background-color: #d1e7fd;
+}
+
+th.sortable:after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+th.sortable.asc:after {
+  content: '↑';
+}
+
+th.sortable.desc:after {
+  content: '↓';
 }
 
 .loading, .error {
