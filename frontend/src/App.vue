@@ -5,7 +5,7 @@
 
     <!-- Отображение имени пользователя после входа -->
     <div v-if="user" class="auth-info">
-      <p><strong>{{ user.username }}</strong></p>
+      <p><strong @click="currentTab = 'profile'" class="username-link">{{ user.username }}</strong></p>
       <button @click="logout">Выйти</button>
     </div>
 
@@ -18,7 +18,7 @@
     <hr>
 
     <!-- Меню вкладок -->
-    <div class="menu-tabs" v-if="!selectedRecruitId">
+    <div class="menu-tabs" v-if="!selectedRecruitId && currentTab !== 'profile'">
       <button @click="currentTab = 'branches'" :class="{ active: currentTab === 'branches' }">Роды войск</button>
       <button @click="currentTab = 'troops'" :class="{ active: currentTab === 'troops' }">Виды войск</button>
       <button @click="currentTab = 'recruitments'" :class="{ active: currentTab === 'recruitments' }">Призывники</button>
@@ -38,6 +38,9 @@
       <LoginPage v-if="currentTab === 'login'" @login="handleLogin" />
       <RegisterPage v-if="currentTab === 'register'" @register="handleRegister" />
 
+      <!-- Профиль пользователя -->
+      <UserProfile v-if="currentTab === 'profile'" :user="user" @logout="logout" @go-home="currentTab = 'branches'" />
+
       <!-- Отдельная страница призывника -->
       <RecruitmentPage
           v-if="selectedRecruitId"
@@ -56,7 +59,8 @@ import RecruitmentOfficesList from '@/components/RecruitmentOfficesList.vue';
 import RecruitmentsList from '@/components/RecruitmentsList.vue';
 import LoginPage from '@/components/LoginPage.vue';
 import RegisterPage from '@/components/RegisterPage.vue';
-import RecruitmentPage from '@/components/RecruitmentPage.vue'; // Импортируем новый компонент
+import RecruitmentPage from '@/components/RecruitmentPage.vue';
+import UserProfile from '@/components/UserProfile.vue'; // Импортируем новый компонент
 
 export default {
   name: 'App',
@@ -67,13 +71,14 @@ export default {
     RecruitmentsList,
     LoginPage,
     RegisterPage,
-    RecruitmentPage // Добавляем компонент в список
+    RecruitmentPage,
+    UserProfile // Добавляем компонент профиля в список
   },
   data() {
     return {
       currentTab: 'branches',
       user: null,
-      selectedRecruitId: null // Добавляем новое состояние для ID выбранного призывника
+      selectedRecruitId: null // ID выбранного призывника
     };
   },
   methods: {
@@ -83,7 +88,7 @@ export default {
           username: responseData.username,
           token: responseData.access_token
         }));
-        this.user = { username: responseData.username };
+        this.user = { username: responseData.username, token: responseData.access_token };
         this.currentTab = 'branches';
       }
     },
@@ -93,7 +98,7 @@ export default {
           username: responseData.username,
           token: responseData.access_token
         }));
-        this.user = { username: responseData.username };
+        this.user = { username: responseData.username, token: responseData.access_token };
         this.currentTab = 'branches';
       }
     },
@@ -166,6 +171,16 @@ export default {
   color: white;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.username-link {
+  cursor: pointer;
+  text-decoration: underline;
+  color: #007bff;
+}
+
+.username-link:hover {
+  color: #0056b3;
 }
 
 .content-section {
