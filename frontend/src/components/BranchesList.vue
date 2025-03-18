@@ -4,7 +4,7 @@
 
     <table>
       <thead>
-      <tr>
+      <tr style="background: #f4f4f4">
         <th>ID</th>
         <th>Название рода войск</th>
         <th v-if="user">Действия</th>
@@ -13,39 +13,39 @@
       <tbody>
       <tr v-for="branch in branches" :key="branch.id">
         <td>{{ branch.id }}</td>
-        <td>
-          <!-- Если сейчас редактируем этот род -->
-          <div v-if="editBranchId === branch.id">
-            <input v-model="editBranchName" />
-          </div>
-          <!-- Если не редактируем -->
-          <div v-else>
-            {{ branch.name }}
-          </div>
-        </td>
+        <td>{{ branch.name }}</td>
         <td v-if="user">
-          <!-- Если редактируем -->
-          <div v-if="editBranchId === branch.id">
-            <button @click="updateBranch(branch.id)">Сохранить</button>
-            <button @click="cancelEdit">Отмена</button>
-          </div>
-          <!-- Если не редактируем -->
-          <div v-else>
-            <button @click="startEdit(branch)">Редактировать</button>
-            <button class="button-delete" @click="deleteBranch(branch.id)">Удалить</button>
-          </div>
+          <button @click="openEditModal(branch)">Редактировать</button>
+          <button class="button-delete" @click="deleteBranch(branch.id)">Удалить</button>
         </td>
       </tr>
       </tbody>
     </table>
-  </div>
 
+    <!-- Модальное окно для редактирования -->
+    <div v-if="isEditModalOpen" class="modal">
+      <div class="modal-content">
+        <h3>Редактировать род войск</h3>
+        <input v-model="editBranchName" placeholder="Название рода войск" />
+        <button @click="updateBranch(editBranchId)">Сохранить</button>
+        <button @click="closeEditModal">Отмена</button>
+      </div>
+    </div>
 
-  <!-- Форма добавления (если есть токен) -->
-  <div v-if="user">
-    <h3>Добавить вид войск</h3>
-    <input v-model="newBranchName" placeholder="Название рода войск" />
-    <button @click="addBranch">Добавить</button>
+    <!-- Модальное окно для добавления -->
+    <div v-if="isAddModalOpen" class="modal">
+      <div class="modal-content">
+        <h3>Добавить род войск</h3>
+        <input v-model="newBranchName" placeholder="Название рода войск" />
+        <button @click="addBranch">Добавить</button>
+        <button @click="closeAddModal">Отмена</button>
+      </div>
+    </div>
+
+    <!-- Кнопка для открытия модального окна добавления -->
+    <div v-if="user">
+      <button @click="openAddModal">Добавить род войск</button>
+    </div>
   </div>
 </template>
 
@@ -60,7 +60,9 @@ export default {
       branches: [],
       newBranchName: '',
       editBranchId: null,
-      editBranchName: ''
+      editBranchName: '',
+      isEditModalOpen: false,
+      isAddModalOpen: false
     };
   },
   methods: {
@@ -82,6 +84,7 @@ export default {
         });
         this.newBranchName = '';
         this.fetchBranches();
+        this.closeAddModal();
       } catch (error) {
         console.error('Ошибка при добавлении:', error);
       }
@@ -99,15 +102,26 @@ export default {
         console.error('Ошибка при удалении:', error);
       }
     },
-    // Начать редактирование
-    startEdit(branch) {
+    // Открытие модального окна редактирования
+    openEditModal(branch) {
       this.editBranchId = branch.id;
       this.editBranchName = branch.name;
+      this.isEditModalOpen = true;
     },
-    // Отмена редактирования
-    cancelEdit() {
+    // Закрытие модального окна редактирования
+    closeEditModal() {
+      this.isEditModalOpen = false;
       this.editBranchId = null;
       this.editBranchName = '';
+    },
+    // Открытие модального окна добавления
+    openAddModal() {
+      this.isAddModalOpen = true;
+    },
+    // Закрытие модального окна добавления
+    closeAddModal() {
+      this.isAddModalOpen = false;
+      this.newBranchName = '';
     },
     // Сохранить изменения
     async updateBranch(branchId) {
@@ -117,9 +131,8 @@ export default {
         await axios.patch(`http://127.0.0.1:8000/branches/${branchId}?name=${encodeURIComponent(this.editBranchName)}`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        this.editBranchId = null;
-        this.editBranchName = '';
         this.fetchBranches();
+        this.closeEditModal();
       } catch (error) {
         console.error('Ошибка при обновлении:', error);
       }
@@ -141,17 +154,6 @@ table {
 th, td {
   padding: 8px;
   border: 1px solid #ccc;
-  text-align: center;
-}
-
-.add-form {
-  margin-bottom: 20px;
-}
-
-.add-form input {
-  padding: 6px;
-  margin-right: 8px;
-  width: 300px;
 }
 
 button {
@@ -191,5 +193,25 @@ input {
 button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+/* Модальное окно */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 400px;
 }
 </style>

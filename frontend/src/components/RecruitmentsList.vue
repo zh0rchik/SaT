@@ -10,123 +10,135 @@
       <p>{{ error }}</p>
       <button @click="fetchRecruitments" class="retry-button">Попробовать снова</button>
     </div>
-    <table v-else>
-      <thead>
-      <tr>
-        <th>ID</th>
-        <th>Имя</th>
-        <th>Адрес</th>
-        <th>Дата рождения</th>
-        <th>Семейное положение</th>
-        <th>Призывной пункт</th>
-        <th>Род войск</th>
-        <th>Действия</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr v-for="recruit in recruitments" :key="recruit.id">
-        <td>{{ recruit.id }}</td>
-        <td>
-          <a href="#" @click.prevent="viewRecruit(recruit.id)" class="recruit-link">
-            {{ recruit.name || 'Не указано' }}
-          </a>
-        </td>
-        <td>{{ recruit.address || 'Не указано' }}</td>
-        <td>{{ formatDate(recruit.date_of_birth) }}</td>
-        <td>{{ recruit.marital_status ? 'Женат' : 'Холост' }}</td>
-        <td>{{ getRecruitmentOfficeInfo(recruit.recruitment_office_id) }}</td>
-        <td>{{ getTroopInfo(recruit.troop_id) }}</td>
-        <td>
-          <button @click="deleteRecruit(recruit.id)" class="delete-button">
-            Удалить
-          </button>
-        </td>
-      </tr>
-      <tr v-if="recruitments.length === 0">
-        <td colspan="8" class="no-data">Нет данных</td>
-      </tr>
-      </tbody>
-    </table>
+    <div v-else class="table-container">
+      <div class="table-header">
+        <button v-if="user" @click="openModal" class="add-button">
+          Добавить призывника
+        </button>
+      </div>
+      <table>
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Имя</th>
+          <th>Адрес</th>
+          <th>Дата рождения</th>
+          <th>Семейное положение</th>
+          <th>Призывной пункт</th>
+          <th>Род войск</th>
+          <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="recruit in recruitments" :key="recruit.id">
+          <td>{{ recruit.id }}</td>
+          <td>
+            <a href="#" @click.prevent="viewRecruit(recruit.id)" class="recruit-link">
+              {{ recruit.name || 'Не указано' }}
+            </a>
+          </td>
+          <td>{{ recruit.address || 'Не указано' }}</td>
+          <td>{{ formatDate(recruit.date_of_birth) }}</td>
+          <td>{{ recruit.marital_status ? 'Женат' : 'Холост' }}</td>
+          <td>{{ getRecruitmentOfficeInfo(recruit.recruitment_office_id) }}</td>
+          <td>{{ getTroopInfo(recruit.troop_id) }}</td>
+          <td>
+            <button @click="deleteRecruit(recruit.id)" class="delete-button">
+              Удалить
+            </button>
+          </td>
+        </tr>
+        <tr v-if="recruitments.length === 0">
+          <td colspan="8" class="no-data">Нет данных</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Форма добавления призывника (если есть токен) -->
-  <div v-if="user" class="add-form-container">
-    <h3>Добавить призывника</h3>
-    <form @submit.prevent="submitForm" class="add-form">
-      <div class="form-group">
-        <label for="name">ФИО:</label>
-        <input
-            id="name"
-            v-model="newRecruit.name"
-            type="text"
-            required
-            placeholder="Введите ФИО призывника"
-        />
+  <!-- Модальное окно добавления призывника -->
+  <div v-if="showModal" class="modal-backdrop" @click="closeModal">
+    <div class="modal-content" @click.stop>
+      <div class="modal-header">
+        <h3>Добавить призывника</h3>
+        <button @click="closeModal" class="close-button">&times;</button>
       </div>
+      <form @submit.prevent="submitForm" class="add-form">
+        <div class="form-group">
+          <label for="name">ФИО:</label>
+          <input
+              id="name"
+              v-model="newRecruit.name"
+              type="text"
+              required
+              placeholder="Введите ФИО призывника"
+          />
+        </div>
 
-      <div class="form-group">
-        <label for="date_of_birth">Дата рождения:</label>
-        <input
-            id="date_of_birth"
-            v-model="newRecruit.date_of_birth"
-            type="date"
-            required
-        />
-      </div>
+        <div class="form-group">
+          <label for="date_of_birth">Дата рождения:</label>
+          <input
+              id="date_of_birth"
+              v-model="newRecruit.date_of_birth"
+              type="date"
+              required
+          />
+        </div>
 
-      <div class="form-group">
-        <label for="address">Адрес:</label>
-        <input
-            id="address"
-            v-model="newRecruit.address"
-            type="text"
-            required
-            placeholder="Введите адрес призывника"
-        />
-      </div>
+        <div class="form-group">
+          <label for="address">Адрес:</label>
+          <input
+              id="address"
+              v-model="newRecruit.address"
+              type="text"
+              required
+              placeholder="Введите адрес призывника"
+          />
+        </div>
 
-      <div class="form-group checkbox">
-        <input
-            id="marital_status"
-            v-model="newRecruit.marital_status"
-            type="checkbox"
-        />
-        <label for="marital_status">Женат</label>
-      </div>
+        <div class="form-group checkbox">
+          <input
+              id="marital_status"
+              v-model="newRecruit.marital_status"
+              type="checkbox"
+          />
+          <label for="marital_status">Женат</label>
+        </div>
 
-      <div class="form-group">
-        <label for="recruitment_office_id">Призывной пункт:</label>
-        <select
-            id="recruitment_office_id"
-            v-model="newRecruit.recruitment_office_id"
-        >
-          <option :value="null">Не выбрано</option>
-          <option
-              v-for="office in recruitmentOffices"
-              :key="office.id"
-              :value="office.id"
+        <div class="form-group">
+          <label for="recruitment_office_id">Призывной пункт:</label>
+          <select
+              id="recruitment_office_id"
+              v-model="newRecruit.recruitment_office_id"
           >
-            {{ office.address }} ({{ office.chief_name }})
-          </option>
-        </select>
-      </div>
+            <option :value="null">Не выбрано</option>
+            <option
+                v-for="office in recruitmentOffices"
+                :key="office.id"
+                :value="office.id"
+            >
+              {{ office.address }} ({{ office.chief_name }})
+            </option>
+          </select>
+        </div>
 
-      <div class="form-actions">
-        <button type="submit" :disabled="submitting">
-          {{ submitting ? 'Добавление...' : 'Добавить призывника' }}
-        </button>
-        <button type="button" @click="resetForm" :disabled="submitting">
-          Очистить форму
-        </button>
-      </div>
+        <div class="form-actions">
+          <button type="submit" :disabled="submitting" class="submit-button">
+            {{ submitting ? 'Добавление...' : 'Добавить призывника' }}
+          </button>
+          <button type="button" @click="resetForm" :disabled="submitting" class="reset-button">
+            Очистить форму
+          </button>
+        </div>
 
-      <div v-if="formError" class="error">
-        {{ formError }}
-      </div>
-      <div v-if="formSuccess" class="success">
-        {{ formSuccess }}
-      </div>
-    </form>
+        <div v-if="formError" class="error">
+          {{ formError }}
+        </div>
+        <div v-if="formSuccess" class="success">
+          {{ formSuccess }}
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -148,6 +160,7 @@ export default {
     const submitting = ref(false);
     const formError = ref(null);
     const formSuccess = ref(null);
+    const showModal = ref(false);
 
     // Новый объект для формы добавления призывника
     const newRecruit = reactive({
@@ -157,6 +170,18 @@ export default {
       marital_status: false,
       recruitment_office_id: null
     });
+
+    // Функция для открытия модального окна
+    const openModal = () => {
+      showModal.value = true;
+      resetForm();
+    };
+
+    // Функция для закрытия модального окна
+    const closeModal = () => {
+      showModal.value = false;
+      resetForm();
+    };
 
     // Функция для перехода на страницу призывника
     const viewRecruit = (id) => {
@@ -216,7 +241,11 @@ export default {
         // Добавляем новый элемент в начало списка
         recruitments.value.unshift(response.data);
         formSuccess.value = 'Призывник успешно добавлен';
-        resetForm();
+
+        // Автоматически закрываем модальное окно через 1.5 секунды после успешного добавления
+        setTimeout(() => {
+          closeModal();
+        }, 1500);
 
         // Загружаем дополнительную информацию для нового призывника
         if (response.data.recruitment_office_id) {
@@ -431,8 +460,11 @@ export default {
       formSuccess,
       submitting,
       recruitmentOffices,
-      viewRecruit, // Добавляем новый метод для перехода на страницу призывника
-      deleteRecruit
+      viewRecruit,
+      deleteRecruit,
+      showModal,
+      openModal,
+      closeModal
     };
   }
 };
@@ -507,8 +539,8 @@ th {
 }
 
 .form-group input, .form-group select {
-  padding: 5px;
-  width: calc(100% - 12px);
+  padding: 8px;
+  width: calc(100% - 18px);
   border: 1px solid #ccc;
   border-radius: 4px;
 }
@@ -526,38 +558,25 @@ th {
 .form-actions {
   margin-top: 20px;
   margin-bottom: 10px;
+  display: flex;
+  gap: 10px;
 }
 
 button {
-  padding: 6px 12px;
+  padding: 8px 16px;
   border: none;
   border-radius: 4px;
-  background-color: #007bff;
-  color: white;
   cursor: pointer;
-  margin: 4px 2px;
+  transition: background-color 0.3s;
 }
 
 button:hover {
-  background-color: #0056b3;
+  opacity: 0.9;
 }
 
 button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
-}
-
-.add-form-container {
-  margin: 20px 0;
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  background-color: #f9f9f9;
-}
-
-.add-form-container h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
 }
 
 /* Стиль для ссылки на страницу призывника */
@@ -584,5 +603,93 @@ button:disabled {
 
 .delete-button:hover {
   background-color: #c0392b;
+}
+
+/* Стили для модального окна */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+  padding: 0;
+}
+
+.close-button:hover {
+  color: #e74c3c;
+}
+
+.table-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.add-button {
+  background-color: #27ae60;
+  color: white;
+}
+
+.submit-button {
+  background-color: #3498db;
+  color: white;
+  flex: 1;
+}
+
+.reset-button {
+  background-color: #95a5a6;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    padding: 15px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
 }
 </style>
