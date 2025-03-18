@@ -121,6 +121,79 @@
       </form>
     </div>
   </div>
+
+  <!-- Добавьте после блока с основной информацией -->
+  <div class="medexams-section">
+    <h3>Медицинские комиссии</h3>
+      <table class="medexams-table">
+        <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Результат</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="exam in medExams" :key="exam.id">
+          <td>{{ formatDate(exam.date_of_exam) }}</td>
+          <td :class="getResultClass(exam.result)">{{ exam.result }}</td>
+        </tr>
+        </tbody>
+      </table>
+  </div>
+
+  <!-- Добавьте в конец блока medexams-section -->
+  <div class="medexams-actions" v-if="user">
+    <button @click="openAddMedExamModal" class="add-button">Добавить медкомиссию</button>
+  </div>
+
+  <!-- Добавьте в конец шаблона перед закрывающим тегом template -->
+  <!-- Модальное окно добавления медкомиссии -->
+  <div v-if="showAddMedExamModal" class="modal-overlay" @click="closeAddMedExamModal">
+    <div class="modal-content" @click.stop>
+      <div class="modal-header">
+        <h3>Добавление медкомиссии</h3>
+        <button @click="closeAddMedExamModal" class="close-button">&times;</button>
+      </div>
+
+      <div v-if="addMedExamError" class="error">
+        <p>{{ addMedExamError }}</p>
+      </div>
+      <div v-if="addMedExamSuccess" class="success">
+        <p>{{ addMedExamSuccess }}</p>
+      </div>
+
+      <form @submit.prevent="submitAddMedExam" class="edit-form">
+        <div class="form-group">
+          <label for="date_of_exam">Дата медкомиссии:</label>
+          <input id="date_of_exam" v-model="medExamForm.date_of_exam" type="date" required />
+        </div>
+
+        <div class="form-group">
+          <label for="recruitment_id">ID призывника:</label>
+          <input id="recruitment_id" :value="medExamForm.recruitment_id" type="number" disabled />
+          <p class="help-text">ID призывника не может быть изменен</p>
+        </div>
+
+        <div class="form-group">
+          <label for="result">Результат:</label>
+          <select id="result" v-model="medExamForm.result" required>
+            <option v-for="result in examResults" :key="result" :value="result">
+              {{ result }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" :disabled="addingMedExam">
+            {{ addingMedExam ? 'Сохранение...' : 'Сохранить' }}
+          </button>
+          <button type="button" @click="closeAddMedExamModal" :disabled="addingMedExam">
+            Отмена
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -138,6 +211,10 @@ export default {
   },
   emits: ['back'],
   setup(props, { emit }) {
+    const medExams = ref([]);
+    const loadingMedExams = ref(false);
+    const medExamsError = ref(null);
+
     const recruit = ref(null);
     const recruitmentOffice = ref(null);
     const troop = ref(null);
@@ -150,6 +227,11 @@ export default {
     const recruitmentOffices = ref([]);
     const troops = ref([]);
 
+    const showAddMedExamModal = ref(false);
+    const addingMedExam = ref(false);
+    const addMedExamError = ref(null);
+    const addMedExamSuccess = ref(null);
+
     // Форма редактирования
     const editForm = reactive({
       name: '',
@@ -160,6 +242,108 @@ export default {
       troop_id: null
     });
 
+    // Форма для добавления медкомиссии
+    const medExamForm = reactive({
+      date_of_exam: new Date().toISOString().substr(0, 10), // Текущая дата по умолчанию
+      recruitment_id: props.recruitId,
+      result: "годен к строевой службе" // Значение по умолчанию
+    });
+
+    // Варианты результатов
+    const examResults = [
+      "годен к строевой службе",
+      "годен к альтернативной службе",
+      "ограничено годен",
+      "не годен"
+    ];
+
+    // Функция открытия модального окна добавления медкомиссии
+    const openAddMedExamModal = () => {
+      showAddMedExamModal.value = true;
+      addMedExamError.value = null;
+      addMedExamSuccess.value = null;
+
+      // Сбросить форму к начальным значениям
+      medExamForm.date_of_exam = new Date().toISOString().substr(0, 10);
+      medExamForm.recruitment_id = props.recruitId;
+      medExamForm.result = "годен к строевой службе";
+    };
+
+// Функция закрытия модального окна
+    const closeAddMedExamModal = () => {
+      showAddMedExamModal.value = false;
+    };
+
+// Функция для отправки формы
+    const submitAddMedExam = async () => {
+      if (!props.user || !props.user.token) {
+        addMedExamError.value = 'Необходима авторизация для добавления медкомиссии.';
+        return;
+      }
+
+      addingMedExam.value = true;
+      addMedExamError.value = null;
+      addMedExamSuccess.value = null;
+
+      try {
+        await axios.post(
+            'http://127.0.0.1:8000/medexams/',
+            {
+              date_of_exam: medExamForm.date_of_exam,
+              recruitment_id: medExamForm.recruitment_id,
+              result: medExamForm.result
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${props.user.token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+        );
+
+        addMedExamSuccess.value = 'Данные медкомиссии успешно добавлены!';
+        await fetchMedExams(); // Перезагрузка данных медкомиссий
+
+        // Закрыть модальное окно через 1 секунду
+        setTimeout(() => {
+          closeAddMedExamModal();
+        }, 1000);
+      } catch (err) {
+        console.error('Ошибка при добавлении медкомиссии:', err);
+        addMedExamError.value = err.response?.data?.detail || 'Ошибка при добавлении данных медкомиссии.';
+      } finally {
+        addingMedExam.value = false;
+      }
+    };
+
+    const fetchMedExams = async () => {
+      loadingMedExams.value = true;
+      medExamsError.value = null;
+      try {
+        const response = await axios.get(`http://127.0.0.1:8000/medexams/${props.recruitId}`);
+        medExams.value = response.data;
+      } catch (err) {
+        console.error('Ошибка при загрузке данных медкомиссий:', err);
+        medExamsError.value = 'Ошибка при загрузке данных медкомиссий.';
+      } finally {
+        loadingMedExams.value = false;
+      }
+    };
+
+    const getResultClass = (result) => {
+      switch (result) {
+        case 'годен к строевой службе':
+          return 'result-fit';
+        case 'годен к альтернативной службе':
+          return 'result-alternative';
+        case 'ограничено годен':
+          return 'result-limited';
+        case 'не годен':
+          return 'result-unfit';
+        default:
+          return '';
+      }
+    };
 
     // Загрузка данных призывника
     const fetchRecruitment = async () => {
@@ -247,11 +431,6 @@ export default {
 
     // Сохранить изменения - исправляем обработку marital_status
     const submitUpdate = async () => {
-      if (!props.user || !props.user.token) {
-        updateError.value = 'Необходима авторизация для внесения изменений.';
-        return;
-      }
-
       updating.value = true;
       updateError.value = null;
       updateSuccess.value = null;
@@ -351,6 +530,7 @@ export default {
     // Загрузка данных при монтировании компонента
     onMounted(() => {
       fetchRecruitment();
+      fetchMedExams();
     });
 
     return {
@@ -375,7 +555,21 @@ export default {
       goBack,
       formatDate,
       fetchRecruitment,
-      handleMaritalStatusChange
+      handleMaritalStatusChange,
+      medExams,
+      loadingMedExams,
+      medExamsError,
+      getResultClass,
+
+      showAddMedExamModal,
+      addingMedExam,
+      addMedExamError,
+      addMedExamSuccess,
+      medExamForm,
+      examResults,
+      openAddMedExamModal,
+      closeAddMedExamModal,
+      submitAddMedExam,
     };
   }
 };
@@ -598,5 +792,76 @@ export default {
 .form-actions button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.medexams-section {
+  margin-top: 30px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 20px;
+}
+
+.medexams-section h3 {
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.medexams-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.medexams-table th,
+.medexams-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.medexams-table th {
+  background-color: #f5f5f5;
+  font-weight: 500;
+}
+
+
+add-medexam-btn-container {
+  margin-top: 15px;
+  text-align: right;
+}
+
+
+
+.medexam-form .form-group {
+  margin-bottom: 15px;
+}
+
+.medexam-form input[disabled] {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.help-text {
+  font-size: 0.8rem;
+  color: #757575;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Стили для кнопки добавления */
+.medexams-actions {
+  margin-top: 15px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add-button {
+  background-color: #43a047;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
 }
 </style>
