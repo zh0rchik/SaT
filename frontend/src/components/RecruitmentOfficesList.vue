@@ -6,7 +6,7 @@
     <table>
       <thead>
       <tr style="background: #f4f4f4">
-        <th>ID</th>
+        <th>№</th>
         <th>Адрес</th>
         <th>Начальник</th>
         <th v-if="user">Действия</th>
@@ -15,7 +15,7 @@
       </thead>
       <tbody>
       <tr v-for="office in recruitmentOffices" :key="office.id">
-        <td>{{ office.id }}</td>
+        <td style="text-align: center;">{{ recruitmentOffices.indexOf(office) + 1 }}</td>
         <td>{{ office.address }}</td>
         <td>{{ office.chief_name }}</td>
         <td v-if="user">
@@ -434,5 +434,16 @@ li {
 .add-button {
   font-size: 16px;
   padding: 10px 20px;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: #f9f9f9; /* Светлый фон для нечетных строк */
+}
+
+tbody tr:nth-child(even) {
+  background-color: #e6e6e6; /* Чуть темнее для четных строк */
+}
+tbody tr:hover {
+  background-color: #d1e7fd; /* Голубой оттенок при наведении */
 }
 </style>

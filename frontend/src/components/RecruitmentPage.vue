@@ -128,12 +128,14 @@
       <table class="medexams-table">
         <thead>
         <tr>
+          <th>№</th>
           <th>Дата</th>
           <th>Результат</th>
         </tr>
         </thead>
         <tbody>
         <tr v-for="exam in medExams" :key="exam.id">
+          <td style="text-align: center;">{{ medExams.indexOf(exam) + 1 }}</td>
           <td>{{ formatDate(exam.date_of_exam) }}</td>
           <td :class="getResultClass(exam.result)">{{ exam.result }}</td>
         </tr>
@@ -863,5 +865,16 @@ add-medexam-btn-container {
   cursor: pointer;
   font-weight: 500;
   font-size: 14px;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: #f9f9f9; /* Светлый фон для нечетных строк */
+}
+
+tbody tr:nth-child(even) {
+  background-color: #e6e6e6; /* Чуть темнее для четных строк */
+}
+tbody tr:hover {
+  background-color: #d1e7fd; /* Голубой оттенок при наведении */
 }
 </style>

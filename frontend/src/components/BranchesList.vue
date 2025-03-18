@@ -5,14 +5,24 @@
     <table>
       <thead>
       <tr style="background: #f4f4f4">
-        <th>ID</th>
-        <th>Название рода войск</th>
+        <th @click="sortTable('id')">
+          №
+          <span v-if="sortBy === 'id'">
+            <i :class="sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'"></i>
+          </span>
+        </th>
+        <th @click="sortTable('name')">
+          Название рода войск
+          <span v-if="sortBy === 'name'">
+            <i :class="sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'"></i>
+          </span>
+        </th>
         <th v-if="user">Действия</th>
       </tr>
       </thead>
       <tbody>
-      <tr v-for="branch in branches" :key="branch.id">
-        <td>{{ branch.id }}</td>
+      <tr v-for="branch in sortedBranches" :key="branch.id">
+        <td style="text-align: center;">{{ branches.indexOf(branch) + 1 }}</td>
         <td>{{ branch.name }}</td>
         <td v-if="user">
           <button @click="openEditModal(branch)">Редактировать</button>
@@ -62,8 +72,24 @@ export default {
       editBranchId: null,
       editBranchName: '',
       isEditModalOpen: false,
-      isAddModalOpen: false
+      isAddModalOpen: false,
+      sortBy: 'id',  // по умолчанию сортируем по id
+      sortOrder: 'asc'  // по умолчанию порядок сортировки - по возрастанию
     };
+  },
+  computed: {
+    // Фильтрация и сортировка массива
+    sortedBranches() {
+      return [...this.branches].sort((a, b) => {
+        const compareA = a[this.sortBy];
+        const compareB = b[this.sortBy];
+        if (this.sortOrder === 'asc') {
+          return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
+        } else {
+          return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
+        }
+      });
+    }
   },
   methods: {
     async fetchBranches() {
@@ -136,6 +162,15 @@ export default {
       } catch (error) {
         console.error('Ошибка при обновлении:', error);
       }
+    },
+    // Сортировка таблицы
+    sortTable(column) {
+      if (this.sortBy === column) {
+        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortBy = column;
+        this.sortOrder = 'asc';
+      }
     }
   },
   mounted() {
@@ -154,6 +189,7 @@ table {
 th, td {
   padding: 8px;
   border: 1px solid #ccc;
+  cursor: pointer; /* Указатель на столбцы для сортировки */
 }
 
 button {
@@ -213,5 +249,34 @@ button:disabled {
   padding: 20px;
   border-radius: 5px;
   width: 400px;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #e6e6e6;
+}
+
+tbody tr:hover {
+  background-color: #d1e7fd;
+}
+
+/* Стиль стрелочек */
+.arrow-up::before {
+  content: "↑";
+  font-size: 12px;
+  margin-left: 5px;
+}
+
+.arrow-down::before {
+  content: "↓";
+  font-size: 12px;
+  margin-left: 5px;
+}
+
+th:hover {
+  background-color: #d1e7fd; /* Голубой оттенок при наведении */
 }
 </style>

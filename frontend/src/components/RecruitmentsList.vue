@@ -19,7 +19,7 @@
       <table>
         <thead>
         <tr>
-          <th>ID</th>
+          <th>№</th>
           <th>Имя</th>
           <th>Адрес</th>
           <th>Дата рождения</th>
@@ -31,7 +31,7 @@
         </thead>
         <tbody>
         <tr v-for="recruit in recruitments" :key="recruit.id">
-          <td>{{ recruit.id }}</td>
+          <td style="text-align: center;">{{ recruitments.indexOf(recruit) + 1 }}</td>
           <td>
             <a href="#" @click.prevent="viewRecruit(recruit.id)" class="recruit-link">
               {{ recruit.name || 'Не указано' }}
@@ -691,5 +691,16 @@ button:disabled {
   .table-container {
     overflow-x: auto;
   }
+}
+
+tbody tr:nth-child(odd) {
+  background-color: #f9f9f9; /* Светлый фон для нечетных строк */
+}
+
+tbody tr:nth-child(even) {
+  background-color: #e6e6e6; /* Чуть темнее для четных строк */
+}
+tbody tr:hover {
+  background-color: #d1e7fd; /* Голубой оттенок при наведении */
 }
 </style>
