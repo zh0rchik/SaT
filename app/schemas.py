@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import date
 from datetime import time
 from typing import Optional
@@ -94,6 +94,22 @@ class UserCreateSchema(BaseModel):
 class UserSchema(BaseModel):
     id: int
     username: str
+
+    class Config:
+        from_attributes = True
+
+class UserInformationSchema(BaseModel):
+    username: Optional[str]
+    last_name: Optional[str] = None
+    first_name: Optional[str] = None
+    father_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+    class Config:
+        from_attributes = True
+
+class UserUpdateSchema(UserInformationSchema):
+    password: Optional[str] = None
 
     class Config:
         from_attributes = True

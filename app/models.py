@@ -90,3 +90,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, index=True, nullable=False)
     password = Column(String, index=True, nullable=False)
+
+    last_name = Column(String, nullable=True)  # Фамилия (по умолчанию пустая)
+    first_name = Column(String, nullable=True)  # Имя (по умолчанию пустое)
+    father_name = Column(String, nullable=True)  # Отчество (по умолчанию пустое)
+    email = Column(String, unique=True, index=True, nullable=True)  # Email (по умолчанию пустой)

@@ -1,10 +1,9 @@
-# app/crud/users_crud.py
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models import User
-from app.schemas import UserCreateSchema
-from sqlalchemy.exc import NoResultFound
+from app.schemas import UserCreateSchema, UserInformationSchema, UserUpdateSchema
 from passlib.context import CryptContext
+from fastapi import HTTPException
 
 # Инициализируем Password Context для хеширования паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -25,7 +24,6 @@ async def get_user_by_username(username: str, db: AsyncSession):
     query = select(User).filter(User.username == username)
     result = await db.execute(query)
     user = result.scalar_one_or_none()
-
     return user  # Возвращаем None, если пользователь не найден
 
 
@@ -37,3 +35,4 @@ async def create_user(user: UserCreateSchema, db: AsyncSession):
     await db.commit()
     await db.refresh(db_user)
     return db_user
+

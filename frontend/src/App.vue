@@ -53,6 +53,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 import BranchesList from '@/components/BranchesList.vue';
 import TroopsList from '@/components/TroopsList.vue';
 import RecruitmentOfficesList from '@/components/RecruitmentOfficesList.vue';
@@ -78,15 +79,35 @@ export default {
     return {
       currentTab: 'branches',
       user: null,
-      selectedRecruitId: null // ID выбранного призывника
+      selectedRecruitId: null, // ID выбранного призывника
     };
   },
   methods: {
+    // Получение данных о текущем пользователе
+    async fetchUserProfile() {
+      const token = JSON.parse(localStorage.getItem('user'))?.token;
+      if (!token) {
+        this.user = null;
+        return;
+      }
+
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/auth/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        this.user = response.data;
+      } catch (error) {
+        console.error('Ошибка при загрузке профиля пользователя:', error);
+        this.user = null;
+      }
+    },
     handleLogin(responseData) {
       if (responseData.access_token) {
         localStorage.setItem('user', JSON.stringify({
           username: responseData.username,
-          token: responseData.access_token
+          token: responseData.access_token,
         }));
         this.user = { username: responseData.username, token: responseData.access_token };
         this.currentTab = 'branches';
@@ -96,7 +117,7 @@ export default {
       if (responseData.access_token) {
         localStorage.setItem('user', JSON.stringify({
           username: responseData.username,
-          token: responseData.access_token
+          token: responseData.access_token,
         }));
         this.user = { username: responseData.username, token: responseData.access_token };
         this.currentTab = 'branches';
@@ -121,6 +142,7 @@ export default {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       this.user = JSON.parse(savedUser);
+      this.fetchUserProfile();  // Загружаем профиль после авторизации
     }
   }
 };
