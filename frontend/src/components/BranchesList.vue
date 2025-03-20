@@ -2,6 +2,16 @@
   <div>
     <h2>Рода войск</h2>
 
+    <!-- Панель фильтров -->
+    <div class="filters">
+      <input
+          v-model="filterName"
+          placeholder="Поиск по названию рода войск"
+          @input="debounceSearch"
+      />
+      <button @click="resetFilters">Сбросить</button>
+    </div>
+
     <table>
       <thead>
       <tr style="background: #f4f4f4">
@@ -16,8 +26,8 @@
       </tr>
       </thead>
       <tbody>
-      <tr v-for="branch in sortedBranches" :key="branch.id">
-        <td style="text-align: center;">{{ branches.indexOf(branch) + 1 }}</td>
+      <tr v-for="(branch, index) in sortedBranches" :key="branch.id">
+        <td style="text-align: center;">{{ skip + index + 1 }}</td>
         <td>{{ branch.name }}</td>
         <td v-if="user">
           <button @click="openEditModal(branch)">Редактировать</button>
@@ -26,6 +36,13 @@
       </tr>
       </tbody>
     </table>
+
+    <!-- Пагинация -->
+    <div class="pagination">
+      <button :disabled="skip === 0" @click="prevPage">Предыдущая</button>
+      <span>Страница {{ Math.floor(skip / limit) + 1 }}</span>
+      <button :disabled="branches.length < limit" @click="nextPage">Следующая</button>
+    </div>
 
     <!-- Модальное окно для редактирования -->
     <div v-if="isEditModalOpen" class="modal">
@@ -48,7 +65,7 @@
     </div>
 
     <!-- Кнопка для открытия модального окна добавления -->
-    <div v-if="user">
+    <div v-if="user" class="add-button">
       <button @click="openAddModal">Добавить род войск</button>
     </div>
   </div>
@@ -68,33 +85,83 @@ export default {
       editBranchName: '',
       isEditModalOpen: false,
       isAddModalOpen: false,
-      sortBy: 'id',  // по умолчанию сортируем по id
-      sortOrder: 'asc'  // по умолчанию порядок сортировки - по возрастанию
+      sortBy: 'name',  // по умолчанию сортируем по имени
+      sortOrder: 'asc',  // по умолчанию порядок сортировки - по возрастанию
+      filterName: '',    // фильтр по названию
+      skip: 0,           // для пагинации
+      limit: 3,         // элементов на странице
+      searchTimeout: null // для дебаунса поиска
     };
   },
   computed: {
-    // Фильтрация и сортировка массива
+    // Используем уже отсортированные данные с сервера
     sortedBranches() {
-      return [...this.branches].sort((a, b) => {
-        const compareA = a[this.sortBy];
-        const compareB = b[this.sortBy];
-        if (this.sortOrder === 'asc') {
-          return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
-        } else {
-          return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
-        }
-      });
+      return this.branches;
     }
   },
   methods: {
+    // Дебаунс поиска для предотвращения частых запросов
+    debounceSearch() {
+      clearTimeout(this.searchTimeout);
+      this.searchTimeout = setTimeout(() => {
+        this.applyFilters();
+      }, 500);
+    },
+
+    // Применить фильтры и загрузить данные
+    applyFilters() {
+      this.skip = 0; // Сбрасываем страницу при применении нового фильтра
+      this.fetchBranches();
+    },
+
+    // Сбросить фильтры
+    resetFilters() {
+      this.filterName = '';
+      this.sortBy = 'name';
+      this.sortOrder = 'asc';
+      this.skip = 0;
+      this.fetchBranches();
+    },
+
+    // Пагинация - предыдущая страница
+    prevPage() {
+      if (this.skip > 0) {
+        this.skip -= this.limit;
+        this.fetchBranches();
+      }
+    },
+
+    // Пагинация - следующая страница
+    nextPage() {
+      if (this.branches.length === this.limit) {
+        this.skip += this.limit;
+        this.fetchBranches();
+      }
+    },
+
     async fetchBranches() {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/branches/');
+        // Формируем URL с параметрами фильтрации, сортировки и пагинации
+        const params = new URLSearchParams();
+        params.append('skip', this.skip);
+        params.append('limit', this.limit);
+
+        if (this.sortBy) {
+          params.append('sort_by', this.sortBy);
+          params.append('order', this.sortOrder);
+        }
+
+        if (this.filterName.trim()) {
+          params.append('name', this.filterName.trim());
+        }
+
+        const response = await axios.get(`http://127.0.0.1:8000/branches/?${params.toString()}`);
         this.branches = response.data;
       } catch (error) {
         console.error('Ошибка при загрузке:', error);
       }
     },
+
     // Добавление
     async addBranch() {
       if (!this.newBranchName.trim()) return;
@@ -110,6 +177,7 @@ export default {
         console.error('Ошибка при добавлении:', error);
       }
     },
+
     // Удаление
     async deleteBranch(branchId) {
       if (!confirm('Вы уверены, что хотите удалить?')) return;
@@ -123,27 +191,32 @@ export default {
         console.error('Ошибка при удалении:', error);
       }
     },
+
     // Открытие модального окна редактирования
     openEditModal(branch) {
       this.editBranchId = branch.id;
       this.editBranchName = branch.name;
       this.isEditModalOpen = true;
     },
+
     // Закрытие модального окна редактирования
     closeEditModal() {
       this.isEditModalOpen = false;
       this.editBranchId = null;
       this.editBranchName = '';
     },
+
     // Открытие модального окна добавления
     openAddModal() {
       this.isAddModalOpen = true;
     },
+
     // Закрытие модального окна добавления
     closeAddModal() {
       this.isAddModalOpen = false;
       this.newBranchName = '';
     },
+
     // Сохранить изменения
     async updateBranch(branchId) {
       if (!this.editBranchName.trim()) return;
@@ -158,6 +231,7 @@ export default {
         console.error('Ошибка при обновлении:', error);
       }
     },
+
     // Сортировка таблицы
     sortTable(column) {
       if (this.sortBy === column) {
@@ -166,6 +240,7 @@ export default {
         this.sortBy = column;
         this.sortOrder = 'asc';
       }
+      this.fetchBranches(); // Загружаем отсортированные данные с сервера
     }
   },
   mounted() {
@@ -184,6 +259,9 @@ table {
 th, td {
   padding: 8px;
   border: 1px solid #ccc;
+}
+
+th {
   cursor: pointer; /* Указатель на столбцы для сортировки */
 }
 
@@ -246,6 +324,7 @@ button:disabled {
   width: 400px;
 }
 
+/* Стили для строк таблицы */
 tbody tr:nth-child(odd) {
   background-color: #f9f9f9;
 }
@@ -273,5 +352,38 @@ tbody tr:hover {
 
 th:hover {
   background-color: #d1e7fd; /* Голубой оттенок при наведении */
+}
+
+/* Стили для панели фильтров */
+.filters {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+}
+
+.filters input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* Стили для пагинации */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.pagination span {
+  margin: 0 10px;
+}
+
+/* Стиль для кнопки добавления */
+.add-button {
+  margin-top: 20px;
+  text-align: right;
 }
 </style>

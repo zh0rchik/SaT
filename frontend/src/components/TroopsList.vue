@@ -2,6 +2,20 @@
   <div>
     <h2>Виды войск</h2>
 
+    <!-- Фильтрация -->
+    <div class="filters">
+      <div class="filter-group">
+        <input v-model="filters.name" placeholder="Фильтр по названию" @input="applyFilters" />
+        <select v-model="filters.branch_id" @change="applyFilters">
+          <option value="">Все рода войск</option>
+          <option v-for="branch in branches" :key="branch.id" :value="branch.id">
+            {{ branch.name }}
+          </option>
+        </select>
+        <button @click="clearFilters" class="button-clear">Сбросить фильтры</button>
+      </div>
+    </div>
+
     <table>
       <thead>
       <tr style="background: #f4f4f4">
@@ -12,8 +26,8 @@
       </tr>
       </thead>
       <tbody>
-      <tr v-for="troop in troops" :key="troop.id">
-        <td style="text-align: center;">{{ troops.indexOf(troop) + 1 }}</td>
+      <tr v-for="(troop, index) in troops" :key="troop.id">
+        <td style="text-align: center;">{{ currentPage * pageSize + index + 1 }}</td>
         <td>{{ troop.name }}</td>
         <td>{{ getBranchName(troop.branch_id) }}</td>
         <td v-if="user">
@@ -21,8 +35,18 @@
           <button class="button-delete" @click="deleteTroop(troop.id)">Удалить</button>
         </td>
       </tr>
+      <tr v-if="troops.length === 0">
+        <td colspan="4" style="text-align: center; padding: 15px;">Нет данных</td>
+      </tr>
       </tbody>
     </table>
+
+    <!-- Пагинация -->
+    <div class="pagination">
+      <button @click="prevPage" :disabled="currentPage === 0">Предыдущая</button>
+      <span>Страница {{ currentPage + 1 }}</span>
+      <button @click="nextPage" :disabled="troops.length < pageSize">Следующая</button>
+    </div>
 
     <div v-if="user">
       <button @click="openAddModal">Добавить вид войск</button>
@@ -78,15 +102,32 @@ export default {
       editBranchId: '',
       isAddModalOpen: false,
       isEditModalOpen: false,
-      sortField: '',
+      sortField: 'name',
       sortOrder: 'asc',
+      currentPage: 0,
+      pageSize: 3,
+      filters: {
+        name: '',
+        branch_id: ''
+      }
     };
   },
   methods: {
     async fetchData() {
       try {
+        let url = `http://127.0.0.1:8000/troops/?skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}&sort_by=${this.sortField}&order=${this.sortOrder}`;
+
+        // Добавляем параметры фильтрации
+        if (this.filters.name) {
+          url += `&name=${encodeURIComponent(this.filters.name)}`;
+        }
+
+        if (this.filters.branch_id) {
+          url += `&branch_id=${this.filters.branch_id}`;
+        }
+
         const [troopsResponse, branchesResponse] = await Promise.all([
-          axios.get(`http://127.0.0.1:8000/troops/?sort_by=${this.sortField}&order=${this.sortOrder}`),
+          axios.get(url),
           axios.get('http://127.0.0.1:8000/branches/')
         ]);
         this.troops = troopsResponse.data;
@@ -97,8 +138,12 @@ export default {
     },
     // Сортировка
     sort(field) {
-      this.sortField = field;
-      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+      if (this.sortField === field) {
+        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortField = field;
+        this.sortOrder = 'asc';
+      }
       this.fetchData();
     },
     // Получить название рода войск
@@ -196,6 +241,29 @@ export default {
         console.error('Ошибка при обновлении:', error);
         alert('Произошла ошибка при обновлении данных');
       }
+    },
+    // Методы для пагинации
+    prevPage() {
+      if (this.currentPage > 0) {
+        this.currentPage--;
+        this.fetchData();
+      }
+    },
+    nextPage() {
+      this.currentPage++;
+      this.fetchData();
+    },
+    // Методы для фильтрации
+    applyFilters() {
+      this.currentPage = 0; // Сбрасываем на первую страницу при изменении фильтров
+      this.fetchData();
+    },
+    clearFilters() {
+      this.filters = {
+        name: '',
+        branch_id: ''
+      };
+      this.applyFilters();
     }
   },
   mounted() {
@@ -315,5 +383,71 @@ tbody tr:nth-child(even) {
 
 tbody tr:hover {
   background-color: #d1e7fd;
+}
+
+/* Стили для фильтров */
+.filters {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-group input, .filter-group select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: auto;
+}
+
+.button-clear {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.button-clear:hover {
+  background-color: #5a6268;
+}
+
+/* Стили для пагинации */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.pagination button {
+  margin: 0 10px;
+  padding: 8px 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  margin: 0 10px;
 }
 </style>

@@ -2,6 +2,15 @@
   <div>
     <h2>Призывные пункты</h2>
 
+    <!-- Фильтрация -->
+    <div class="filters">
+      <div class="filter-group">
+        <input v-model="filters.address" placeholder="Фильтр по адресу" @input="applyFilters" />
+        <input v-model="filters.chief_name" placeholder="Фильтр по начальнику" @input="applyFilters" />
+        <button @click="clearFilters" class="button-clear">Сбросить фильтры</button>
+      </div>
+    </div>
+
     <!-- Таблица -->
     <table>
       <thead>
@@ -18,8 +27,8 @@
       </tr>
       </thead>
       <tbody>
-      <tr v-for="office in recruitmentOffices" :key="office.id">
-        <td style="text-align: center;">{{ recruitmentOffices.indexOf(office) + 1 }}</td>
+      <tr v-for="(office, index) in recruitmentOffices" :key="office.id">
+        <td style="text-align: center;">{{ currentPage * pageSize + index + 1 }}</td>
         <td>{{ office.address }}</td>
         <td>{{ office.chief_name }}</td>
         <td v-if="user">
@@ -39,8 +48,18 @@
           <div v-else>Нет данных</div>
         </td>
       </tr>
+      <tr v-if="recruitmentOffices.length === 0">
+        <td colspan="5" style="text-align: center;">Нет данных</td>
+      </tr>
       </tbody>
     </table>
+
+    <!-- Пагинация -->
+    <div class="pagination">
+      <button @click="prevPage" :disabled="currentPage === 0">Предыдущая</button>
+      <span>Страница {{ currentPage + 1 }}</span>
+      <button @click="nextPage" :disabled="recruitmentOffices.length < pageSize">Следующая</button>
+    </div>
 
     <!-- Кнопка добавления нового призывного пункта -->
     <div v-if="user" class="add-button-container">
@@ -147,9 +166,17 @@ export default {
       showAddModal: false,
       showEditModal: false,
       showWorkModeModal: false,
-      // Добавляем переменные для сортировки
-      sortField: '',
-      sortOrder: 'asc'
+      // Переменные для сортировки
+      sortField: 'address',
+      sortOrder: 'asc',
+      // Переменные для пагинации
+      currentPage: 0,
+      pageSize: 3,  // поменять
+      // Переменные для фильтрации
+      filters: {
+        address: '',
+        chief_name: ''
+      }
     };
   },
   methods: {
@@ -168,14 +195,41 @@ export default {
       this.fetchOffices();
     },
 
+    // Функции для пагинации
+    prevPage() {
+      if (this.currentPage > 0) {
+        this.currentPage--;
+        this.fetchOffices();
+      }
+    },
+
+    nextPage() {
+      this.currentPage++;
+      this.fetchOffices();
+    },
+
+    // Функции для фильтрации
+    applyFilters() {
+      this.currentPage = 0;
+      this.fetchOffices();
+    },
+
+    clearFilters() {
+      this.filters = { address: '', chief_name: '' };
+      this.applyFilters();
+    },
+
     async fetchOffices() {
       try {
-        // Формируем URL с параметрами сортировки
-        let url = 'http://127.0.0.1:8000/recruitment_offices/';
+        // Формируем URL с параметрами сортировки, пагинации и фильтрации
+        let url = `http://127.0.0.1:8000/recruitment_offices/?skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}&sort_by=${this.sortField}&order=${this.sortOrder}`;
 
-        // Добавляем параметры сортировки, если они заданы
-        if (this.sortField) {
-          url += `?sort_by=${this.sortField}&order=${this.sortOrder}`;
+        // Добавляем параметры фильтрации
+        if (this.filters.address) {
+          url += `&address=${encodeURIComponent(this.filters.address)}`;
+        }
+        if (this.filters.chief_name) {
+          url += `&chief_name=${encodeURIComponent(this.filters.chief_name)}`;
         }
 
         const response = await axios.get(url);
@@ -380,6 +434,14 @@ button:hover {
   background-color: #5a6268;
 }
 
+.button-clear {
+  background-color: #6c757d;
+}
+
+.button-clear:hover {
+  background-color: #5a6268;
+}
+
 ul {
   list-style-type: none;
   padding: 0;
@@ -482,7 +544,6 @@ th.sortable {
   cursor: pointer;
   position: relative;
   padding-right: 20px; /* Место для стрелки */
-  transition: background-color 0.3s;
 }
 
 th.sortable:hover {
@@ -503,5 +564,46 @@ th.sortable.asc:after {
 
 th.sortable.desc:after {
   content: '↓';
+}
+
+/* Стили для фильтров */
+.filters {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Расстояние между инпутами */
+  max-width: 300px; /* Чтобы не растягивалось на всю ширину */
+}
+
+.filter-group input, .filter-group select {
+  margin-right: 10px;
+  margin-bottom: 0;
+  width: auto;
+}
+
+/* Стили для пагинации */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.pagination button {
+  margin: 0 10px;
+}
+
+.pagination span {
+  margin: 0 10px;
 }
 </style>

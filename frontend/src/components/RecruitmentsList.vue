@@ -2,6 +2,35 @@
   <div>
     <h2>Список призывников</h2>
 
+    <!-- Фильтрация -->
+    <div class="filters">
+      <div class="filter-group">
+        <input v-model="filters.name" placeholder="Фильтр по имени" @input="applyFilters" />
+        <input v-model="filters.address" placeholder="Фильтр по адресу" @input="applyFilters" />
+        <input type="date" v-model="filters.date_of_birth" placeholder="Дата рождения" @input="applyFilters" />
+        <select v-model="filters.recruitment_office_id" @change="applyFilters">
+          <option value="">Все призывные пункты</option>
+          <option v-for="office in recruitmentOffices" :key="office.id" :value="office.id">
+            {{ office.address }}
+          </option>
+        </select>
+
+        <select v-model="filters.marital_status" @change="applyFilters">
+          <option value="">Все с/п</option>
+          <option value="true">Женат</option>
+          <option value="false">Холост</option>
+        </select>
+
+        <select v-model="filters.troop_id" @change="applyFilters">
+          <option value="">Все рода войск</option>
+          <option v-for="troop in troops" :key="troop.id" :value="troop.id">
+            {{ troop.name }}
+          </option>
+        </select>
+        <button @click="clearFilters" class="button-clear">Сбросить фильтры</button>
+      </div>
+    </div>
+
     <!-- Таблица призывников -->
     <div v-if="loading" class="loading">
       Загрузка данных...
@@ -65,6 +94,13 @@
         </tr>
         </tbody>
       </table>
+
+      <!-- Пагинация -->
+      <div class="pagination">
+        <button @click="prevPage" :disabled="currentPage === 0">Предыдущая</button>
+        <span>Страница {{ currentPage + 1 }}</span>
+        <button @click="nextPage" :disabled="recruitments.length < pageSize">Следующая</button>
+      </div>
     </div>
   </div>
 
@@ -156,363 +192,256 @@
 
 <script>
 import axios from 'axios';
-import { ref, reactive, onMounted } from 'vue';
 
 export default {
   name: 'RecruitmentsList',
   props: ['user'],
-  emits: ['view-recruit'],
-  setup(props, { emit }) {
-    const recruitments = ref([]);
-    const loading = ref(true);
-    const error = ref(null);
-    const officesCache = reactive({});
-    const troopsCache = reactive({});
-    const recruitmentOffices = ref([]);
-    const submitting = ref(false);
-    const formError = ref(null);
-    const formSuccess = ref(null);
-    const showModal = ref(false);
-    // Добавляем переменные для сортировки
-    const sortField = ref('');
-    const sortOrder = ref('asc');
-
-    // Новый объект для формы добавления призывника
-    const newRecruit = reactive({
-      name: '',
-      date_of_birth: '',
-      address: '',
-      marital_status: false,
-      recruitment_office_id: null
-    });
-
-    // Функция для сортировки
-    const sort = (field) => {
-      if (sortField.value === field) {
-        // Если уже сортируем по этому полю, меняем порядок
-        sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-      } else {
-        // Если новое поле, устанавливаем его и сбрасываем порядок на 'asc'
-        sortField.value = field;
-        sortOrder.value = 'asc';
-      }
-
-      // Перезагружаем данные с новыми параметрами сортировки
-      fetchRecruitments();
-    };
-
-    // Функция для открытия модального окна
-    const openModal = () => {
-      showModal.value = true;
-      resetForm();
-    };
-
-    // Функция для закрытия модального окна
-    const closeModal = () => {
-      showModal.value = false;
-      resetForm();
-    };
-
-    // Функция для перехода на страницу призывника
-    const viewRecruit = (id) => {
-      emit('view-recruit', id);
-    };
-
-    // Функция получения токена
-    const getToken = () => {
-      try {
-        if (props.user) {
-          return props.user.token;
-        }
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          return JSON.parse(userData).token;
-        }
-        return null;
-      } catch (err) {
-        console.error('Ошибка при получении токена:', err);
-        return null;
-      }
-    };
-
-    // Функция сброса формы
-    const resetForm = () => {
-      newRecruit.name = '';
-      newRecruit.date_of_birth = '';
-      newRecruit.address = '';
-      newRecruit.marital_status = false;
-      newRecruit.recruitment_office_id = null;
-      formError.value = null;
-      formSuccess.value = null;
-    };
-
-    // Функция отправки формы
-    const submitForm = async () => {
-      formError.value = null;
-      formSuccess.value = null;
-      submitting.value = true;
-
-      const token = getToken();
-      if (!token) {
-        formError.value = 'Необходима авторизация';
-        submitting.value = false;
-        return;
-      }
-
-      try {
-        const response = await axios.post('http://127.0.0.1:8000/recruitments/', newRecruit, {
-          timeout: 5000,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        // Добавляем новый элемент в начало списка
-        recruitments.value.unshift(response.data);
-        formSuccess.value = 'Призывник успешно добавлен';
-
-        // Автоматически закрываем модальное окно через 1.5 секунды после успешного добавления
-        setTimeout(() => {
-          closeModal();
-        }, 1500);
-
-        // Загружаем дополнительную информацию для нового призывника
-        if (response.data.recruitment_office_id) {
-          fetchRecruitmentOffice(response.data.recruitment_office_id);
-        }
-        if (response.data.troop_id) {
-          fetchTroop(response.data.troop_id);
-        }
-
-      } catch (err) {
-        console.error('Ошибка при добавлении призывника:', err);
-
-        if (err.response && err.response.status === 401) {
-          formError.value = 'Ошибка авторизации. Пожалуйста, войдите снова.';
-        } else if (err.code === 'ECONNABORTED') {
-          formError.value = 'Превышено время ожидания ответа от сервера';
-        } else if (err.response) {
-          // Проверяем, есть ли подробная информация об ошибке валидации
-          if (err.response.data?.detail && Array.isArray(err.response.data.detail)) {
-            const errors = err.response.data.detail.map(e => `${e.loc[1]}: ${e.msg}`).join('; ');
-            formError.value = `Ошибка валидации: ${errors}`;
-          } else {
-            formError.value = `Ошибка сервера: ${err.response.status} - ${err.response.data?.detail || 'Неизвестная ошибка'}`;
-          }
-        } else if (err.request) {
-          formError.value = 'Не удалось соединиться с сервером. Проверьте, что сервер запущен и доступен.';
-        } else {
-          formError.value = `Ошибка: ${err.message}`;
-        }
-      } finally {
-        submitting.value = false;
-      }
-    };
-
-    const fetchRecruitments = async () => {
-      loading.value = true;
-      error.value = null;
-
-      try {
-        // Формируем URL с параметрами сортировки
-        let url = 'http://127.0.0.1:8000/recruitments/';
-
-        // Добавляем параметры сортировки, если они заданы
-        if (sortField.value) {
-          url += `?sort_by=${sortField.value}&order=${sortOrder.value}`;
-        }
-
-        // Добавляем обработку timeout для предотвращения вечной загрузки
-        const response = await axios.get(url, {
-          timeout: 5000,
-        });
-
-        recruitments.value = response.data || [];
-
-        // Проверяем, что данные в ожидаемом формате
-        if (!Array.isArray(recruitments.value)) {
-          throw new Error('Неверный формат данных');
-        }
-
-        // Загружаем информацию о призывных пунктах и родах войск
-        for (const recruit of recruitments.value) {
-          if (recruit.recruitment_office_id !== null && recruit.recruitment_office_id !== undefined) {
-            fetchRecruitmentOffice(recruit.recruitment_office_id);
-          }
-
-          if (recruit.troop_id !== null && recruit.troop_id !== undefined) {
-            fetchTroop(recruit.troop_id);
-          }
-        }
-
-      } catch (err) {
-        console.error('Ошибка при загрузке данных:', err);
-
-        if (err.code === 'ECONNABORTED') {
-          error.value = 'Превышено время ожидания ответа от сервера';
-        } else if (err.response) {
-          // Ошибка с ответом от сервера
-          error.value = `Ошибка сервера: ${err.response.status} - ${err.response.data?.detail || 'Неизвестная ошибка'}`;
-        } else if (err.request) {
-          // Ошибка без ответа от сервера
-          error.value = 'Не удалось соединиться с сервером. Проверьте, что сервер запущен и доступен.';
-        } else {
-          // Другие ошибки
-          error.value = `Ошибка: ${err.message}`;
-        }
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    // Получение списка всех призывных пунктов для выпадающего списка
-    const fetchAllRecruitmentOffices = async () => {
-      try {
-        const response = await axios.get('http://127.0.0.1:8000/recruitment_offices/', {
-          timeout: 5000,
-        });
-
-        if (Array.isArray(response.data)) {
-          recruitmentOffices.value = response.data;
-
-          // Также добавляем в кэш для отображения в таблице
-          response.data.forEach(office => {
-            officesCache[office.id] = office;
-          });
-        }
-      } catch (err) {
-        console.error('Ошибка при загрузке призывных пунктов:', err);
-      }
-    };
-
-    const fetchRecruitmentOffice = async (id) => {
-      if (officesCache[id]) return;
-      if (id === null || id === undefined) return;
-
-      try {
-        const response = await axios.get(`http://127.0.0.1:8000/recruitment_offices/${id}`, {
-          timeout: 3000,
-        });
-        officesCache[id] = response.data;
-      } catch (err) {
-        console.error(`Ошибка при загрузке данных о призывном пункте ${id}:`, err);
-        officesCache[id] = { error: true, message: err.message };
-      }
-    };
-
-    const fetchTroop = async (id) => {
-      if (troopsCache[id]) return;
-      if (id === null || id === undefined) return;
-
-      try {
-        const response = await axios.get(`http://127.0.0.1:8000/troops/${id}`, {
-          timeout: 3000,
-        });
-        troopsCache[id] = response.data;
-      } catch (err) {
-        console.error(`Ошибка при загрузке данных о роде войск ${id}:`, err);
-        troopsCache[id] = { error: true, message: err.message };
-      }
-    };
-
-    // Функция удаления призывника
-    const deleteRecruit = async (id) => {
-      const token = getToken();
-      if (!token) {
-        alert('Необходима авторизация для удаления');
-        return;
-      }
-
-      try {
-        await axios.delete(`http://127.0.0.1:8000/recruitments/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        // Удаляем призывника из списка после успешного запроса
-        recruitments.value = recruitments.value.filter(r => r.id !== id);
-
-      } catch (err) {
-        console.error(`Ошибка при удалении призывника ID=${id}:`, err);
-        alert('Ошибка при удалении призывника');
-      }
-    };
-
-    const getRecruitmentOfficeInfo = (id) => {
-      if (id === null || id === undefined) return 'Не прикреплён';
-      if (!officesCache[id]) return 'Загрузка...';
-      if (officesCache[id].error) return 'Ошибка загрузки';
-
-      const office = officesCache[id];
-      return `${office.address || 'Адрес не указан'} (${office.chief_name || 'Начальник не указан'})`;
-    };
-
-    const getTroopInfo = (id) => {
-      if (id === null || id === undefined) return 'Не определён';
-      if (!troopsCache[id]) return 'Загрузка...';
-      if (troopsCache[id].error) return 'Ошибка загрузки';
-
-      return troopsCache[id].name || 'Название не указано';
-    };
-
-    const formatDate = (dateString) => {
-      if (!dateString) return 'Не указана';
-
-      try {
-        const date = new Date(dateString);
-
-        if (isNaN(date.getTime())) {
-          return 'Некорректная дата';
-        }
-
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-
-        return `${day}.${month}.${year}`;
-      } catch (err) {
-        console.error('Ошибка форматирования даты:', err);
-        return 'Ошибка формата';
-      }
-    };
-
-    onMounted(() => {
-      fetchRecruitments();
-      fetchAllRecruitmentOffices();
-    });
-
+  emit: ['view-recruit'],
+  data() {
     return {
-      recruitments,
-      loading,
-      error,
-      fetchRecruitments,
-      getRecruitmentOfficeInfo,
-      getTroopInfo,
-      formatDate,
-      newRecruit,
-      submitForm,
-      resetForm,
-      formError,
-      formSuccess,
-      submitting,
-      recruitmentOffices,
-      viewRecruit,
-      deleteRecruit,
-      showModal,
-      openModal,
-      closeModal,
-      // Добавляем новые переменные и функции для сортировки
-      sortField,
-      sortOrder,
-      sort
+      recruitments: [],
+      recruitmentOffices: [],
+      troops: [],
+      loading: true,
+      error: null,
+      showModal: false,
+      submitting: false,
+      formError: null,
+      formSuccess: null,
+      newRecruit: {
+        name: '',
+        date_of_birth: '',
+        address: '',
+        marital_status: false,
+        recruitment_office_id: null,
+        troop_id: null
+      },
+      // Пагинация и сортировка
+      currentPage: 0,
+      pageSize: 3, // поменять
+      sortField: 'name',
+      sortOrder: 'asc',
+      // Фильтры
+      filters: {
+        name: '',
+        address: '',
+        date_of_birth: '',
+        recruitment_office_id: '',
+        troop_id: '',
+        marital_status: ''
+      }
     };
+  },
+  methods: {
+    // Методы для получения данных
+    async fetchRecruitments() {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        let url = `http://127.0.0.1:8000/recruitments/?skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}&sort_by=${this.sortField}&order=${this.sortOrder}`;
+
+        // Добавляем параметры фильтрации в URL
+        if (this.filters.name) {
+          url += `&name=${encodeURIComponent(this.filters.name)}`;
+        }
+
+        if (this.filters.address) {
+          url += `&address=${encodeURIComponent(this.filters.address)}`;
+        }
+
+        if (this.filters.date_of_birth) {
+          url += `&date_of_birth=${this.filters.date_of_birth}`;
+        }
+
+        if (this.filters.recruitment_office_id) {
+          url += `&recruitment_office_id=${this.filters.recruitment_office_id}`;
+        }
+
+        if (this.filters.troop_id) {
+          url += `&troop_id=${this.filters.troop_id}`;
+        }
+
+        if (this.filters.marital_status !== '') {
+          url += `&marital_status=${this.filters.marital_status}`;
+        }
+
+        const response = await axios.get(url);
+        this.recruitments = response.data;
+
+      } catch (error) {
+        console.error('Ошибка при загрузке призывников:', error);
+        this.error = 'Не удалось загрузить данные. Пожалуйста, попробуйте еще раз.';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchRecruitmentOffices() {
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/recruitment_offices/');
+        this.recruitmentOffices = response.data;
+      } catch (error) {
+        console.error('Ошибка при загрузке призывных пунктов:', error);
+      }
+    },
+
+    async fetchTroops() {
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/troops/');
+        this.troops = response.data;
+      } catch (error) {
+        console.error('Ошибка при загрузке родов войск:', error);
+      }
+    },
+
+    // Методы сортировки
+    sort(field) {
+      if (this.sortField === field) {
+        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortField = field;
+        this.sortOrder = 'asc';
+      }
+      this.fetchRecruitments();
+    },
+
+    // Методы пагинации
+    prevPage() {
+      if (this.currentPage > 0) {
+        this.currentPage--;
+        this.fetchRecruitments();
+      }
+    },
+
+    nextPage() {
+      this.currentPage++;
+      this.fetchRecruitments();
+    },
+
+    // Методы фильтрации
+    applyFilters() {
+      this.currentPage = 0; // Сбрасываем на первую страницу при изменении фильтров
+      this.fetchRecruitments();
+    },
+
+    clearFilters() {
+      this.filters = {
+        name: '',
+        address: '',
+        date_of_birth: '',
+        recruitment_office_id: '',
+        troop_id: '',
+        marital_status: ''  // Добавить это поле
+      };
+      this.applyFilters();
+    },
+
+    // Вспомогательные методы и форматирование
+    formatDate(dateString) {
+      if (!dateString) return 'Не указано';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ru-RU');
+    },
+
+    getRecruitmentOfficeInfo(officeId) {
+      if (!officeId) return 'Не указано';
+      const office = this.recruitmentOffices.find(o => o.id === officeId);
+      return office ? office.address : 'Не найдено';
+    },
+
+    getTroopInfo(troopId) {
+      if (!troopId) return 'Не указано';
+      const troop = this.troops.find(t => t.id === troopId);
+      return troop ? troop.name : 'Не найдено';
+    },
+
+    // Методы работы с призывниками
+    viewRecruit(id) {
+      // Можно добавить переход на детальный просмотр призывника
+      console.log('Просмотр призывника', id);
+      this.$router.push(`/recruit/${id}`);
+      this.$emit('view-recruit', id);
+    },
+
+    async deleteRecruit(id) {
+      if (!confirm('Вы уверены, что хотите удалить этого призывника?')) return;
+
+      try {
+        const token = JSON.parse(localStorage.getItem('user'))?.token;
+        await axios.delete(`http://127.0.0.1:8000/recruitments/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        this.fetchRecruitments();
+      } catch (error) {
+        console.error('Ошибка при удалении призывника:', error);
+        alert('Не удалось удалить призывника. Пожалуйста, попробуйте еще раз.');
+      }
+    },
+
+    // Методы работы с модальным окном
+    openModal() {
+      this.showModal = true;
+      this.resetForm();
+    },
+
+    closeModal() {
+      this.showModal = false;
+      this.resetForm();
+    },
+
+    resetForm() {
+      this.newRecruit = {
+        name: '',
+        date_of_birth: '',
+        address: '',
+        marital_status: false,
+        recruitment_office_id: null,
+        troop_id: null
+      };
+      this.formError = null;
+      this.formSuccess = null;
+    },
+
+    async submitForm() {
+      if (!this.newRecruit.name || !this.newRecruit.date_of_birth || !this.newRecruit.address) {
+        this.formError = 'Пожалуйста, заполните все обязательные поля';
+        return;
+      }
+
+      this.submitting = true;
+      this.formError = null;
+      this.formSuccess = null;
+
+      try {
+        const token = JSON.parse(localStorage.getItem('user'))?.token;
+        await axios.post('http://127.0.0.1:8000/recruitments/', this.newRecruit, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        this.formSuccess = 'Призывник успешно добавлен';
+        this.fetchRecruitments();
+        setTimeout(() => {
+          this.closeModal();
+        }, 1500);
+      } catch (error) {
+        console.error('Ошибка при добавлении призывника:', error);
+        this.formError = 'Не удалось добавить призывника. Пожалуйста, попробуйте еще раз.';
+      } finally {
+        this.submitting = false;
+      }
+    }
+  },
+  mounted() {
+    this.fetchRecruitments();
+    this.fetchRecruitmentOffices();
+    this.fetchTroops();
   }
 };
 </script>
 
 <style scoped>
+/* Основные стили таблицы */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -520,8 +449,8 @@ table {
 }
 
 th, td {
-  padding: 8px;
-  border: 1px solid #ccc;
+  padding: 10px;
+  border: 1px solid #ddd;
   text-align: left;
 }
 
@@ -529,11 +458,11 @@ th {
   background-color: #f4f4f4;
 }
 
-/* Стили для сортируемых заголовков */
+/* Сортировка */
 th.sortable {
   cursor: pointer;
   position: relative;
-  padding-right: 20px; /* Место для стрелки */
+  padding-right: 20px;
   transition: background-color 0.3s;
 }
 
@@ -557,131 +486,142 @@ th.sortable.desc:after {
   content: '↓';
 }
 
-.loading, .error {
+/* Стили строк таблицы */
+tbody tr:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #e6e6e6;
+}
+
+tbody tr:hover {
+  background-color: #d1e7fd;
+}
+
+/* Фильтры */
+.filters {
   margin: 20px 0;
-  padding: 10px;
-  background-color: #f8f8f8;
-  border-radius: 4px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.error {
-  color: #e74c3c;
-  border-left: 4px solid #e74c3c;
+.filter-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.success {
-  color: #27ae60;
-  border-left: 4px solid #27ae60;
-  margin: 20px 0;
-  padding: 10px;
-  background-color: #f8f8f8;
-  border-radius: 4px;
-}
-
-.no-data {
-  text-align: center;
-  color: #7f8c8d;
-  padding: 20px 0;
-}
-
-.retry-button {
-  margin-top: 10px;
-  padding: 5px 10px;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.retry-button:hover {
-  background-color: #2980b9;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-
-.form-group input, .form-group select {
+.filter-group input, .filter-group select {
   padding: 8px;
-  width: calc(100% - 18px);
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
-.form-group.checkbox {
+.button-clear {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.button-clear:hover {
+  background-color: #5a6268;
+}
+
+/* Пагинация */
+.pagination {
   display: flex;
+  justify-content: center;
   align-items: center;
+  margin: 20px 0;
 }
 
-.form-group.checkbox input {
-  width: auto;
-  margin-right: 10px;
-}
-
-.form-actions {
-  margin-top: 20px;
-  margin-bottom: 10px;
-  display: flex;
-  gap: 10px;
-}
-
-button {
-  padding: 8px 16px;
+.pagination button {
+  margin: 0 10px;
+  padding: 8px 12px;
+  background-color: #007bff;
+  color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s;
 }
 
-button:hover {
-  opacity: 0.9;
-}
-
-button:disabled {
+.pagination button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
 }
 
-/* Стиль для ссылки на страницу призывника */
-.recruit-link {
-  color: #007bff;
-  text-decoration: none;
-  cursor: pointer;
+.pagination span {
+  margin: 0 10px;
 }
 
-.recruit-link:hover {
-  text-decoration: underline;
-  color: #0056b3;
-}
-
-.delete-button {
-  background-color: #e74c3c;
-  color: white;
-  padding: 4px 8px;
+/* Кнопки */
+button {
+  padding: 8px 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s;
+}
+
+.add-button {
+  background-color: #28a745;
+  color: white;
+  padding: 10px 15px;
+  margin-bottom: 10px;
+}
+
+.add-button:hover {
+  background-color: #218838;
+}
+
+.delete-button {
+  background-color: #dc3545;
+  color: white;
 }
 
 .delete-button:hover {
-  background-color: #c0392b;
+  background-color: #c82333;
 }
 
-/* Стили для модального окна */
+.submit-button {
+  background-color: #007bff;
+  color: white;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #0069d9;
+}
+
+.reset-button {
+  background-color: #6c757d;
+  color: white;
+}
+
+.reset-button:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Модальное окно */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
@@ -692,25 +632,20 @@ button:disabled {
 .modal-content {
   background-color: white;
   padding: 20px;
-  border-radius: 5px;
-  width: 90%;
-  max-width: 500px;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #dee2e6;
   padding-bottom: 10px;
-}
-
-.modal-header h3 {
-  margin: 0;
+  margin-bottom: 15px;
 }
 
 .close-button {
@@ -718,59 +653,83 @@ button:disabled {
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: #333;
-  padding: 0;
 }
 
-.close-button:hover {
-  color: #e74c3c;
+/* Форма */
+.form-group {
+  margin-bottom: 15px;
 }
 
-.table-header {
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.form-group.checkbox {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
+  align-items: center;
 }
 
-.add-button {
-  background-color: #27ae60;
-  color: white;
+.form-group.checkbox input {
+  margin-right: 10px;
 }
 
-.submit-button {
-  background-color: #3498db;
-  color: white;
-  flex: 1;
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
 }
 
-.reset-button {
-  background-color: #95a5a6;
-  color: white;
+/* Сообщения */
+.error {
+  color: #721c24;
+  background-color: #f8d7da;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 15px;
 }
 
-@media (max-width: 768px) {
-  .modal-content {
-    width: 95%;
-    padding: 15px;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .table-container {
-    overflow-x: auto;
-  }
+.success {
+  color: #155724;
+  background-color: #d4edda;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 15px;
 }
 
-tbody tr:nth-child(odd) {
-  background-color: #f9f9f9; /* Светлый фон для нечетных строк */
+.loading {
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
 }
 
-tbody tr:nth-child(even) {
-  background-color: #e6e6e6; /* Чуть темнее для четных строк */
+.no-data {
+  text-align: center;
+  padding: 15px;
+  font-style: italic;
+  color: #6c757d;
 }
-tbody tr:hover {
-  background-color: #d1e7fd; /* Голубой оттенок при наведении */
+
+.recruit-link {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.recruit-link:hover {
+  text-decoration: underline;
+}
+
+.table-container {
+  overflow-x: auto;
 }
 </style>
