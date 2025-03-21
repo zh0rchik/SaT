@@ -166,7 +166,7 @@
 
       <form @submit.prevent="submitAddMedExam" class="edit-form">
         <div class="form-group">
-          <label for="date_of_exam">Дата медкомиссии:</label>
+          <label for="date_of_exam">Дата медкомиссии <span class="required">*</span>:</label>
           <input id="date_of_exam" v-model="medExamForm.date_of_exam" type="date" required />
         </div>
 
@@ -177,7 +177,7 @@
         </div>
 
         <div class="form-group">
-          <label for="result">Результат:</label>
+          <label for="result">Результат <span class="required">*</span>:</label>
           <select id="result" v-model="medExamForm.result" required>
             <option v-for="result in examResults" :key="result" :value="result">
               {{ result }}

@@ -31,16 +31,16 @@
     <div class="edit-modal-content">
       <h3>Редактировать профиль</h3>
       <form @submit.prevent="updateUserProfile">
-        <label for="first_name">Имя:</label>
+        <label for="first_name">Имя<span class="required">*</span>:</label>
         <input v-model="editUserInfo.first_name" type="text" id="first_name" required />
 
-        <label for="last_name">Фамилия:</label>
+        <label for="last_name">Фамилия<span class="required">*</span>:</label>
         <input v-model="editUserInfo.last_name" type="text" id="last_name" required />
 
-        <label for="father_name">Отчество:</label>
+        <label for="father_name">Отчество<span class="required">*</span>:</label>
         <input v-model="editUserInfo.father_name" type="text" id="father_name" required />
 
-        <label for="email">Email:</label>
+        <label for="email">Email<span class="required">*</span>:</label>
         <input v-model="editUserInfo.email" type="email" id="email" required />
 
         <label for="password">Пароль:</label>
@@ -49,7 +49,7 @@
         <label for="confirm_password">Подтверждение пароля:</label>
         <input v-model="confirmPassword" type="password" id="confirm_password" />
 
-        <label for="page_size">Имя:</label>
+        <label for="page_size">Размер страницы<span class="required">*</span>:</label>
         <input v-model="editUserInfo.page_size" type="text" id="page_size" required />
 
         <div class="form-buttons">

@@ -58,7 +58,9 @@
     <div v-if="isAddModalOpen" class="modal">
       <div class="modal-content">
         <h3>Добавить вид войск</h3>
-        <input v-model="newTroopName" placeholder="Название вида войск" />
+        <label>Название вида войск <span class="required">*</span></label>
+        <input v-model="newTroopName" />
+        <label>Род войск <span class="required">*</span></label>
         <select v-model="selectedBranchId">
           <option disabled value="">Выберите род войск</option>
           <option v-for="branch in branches" :key="branch.id" :value="branch.id">

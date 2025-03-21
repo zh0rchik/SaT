@@ -149,7 +149,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 #app {
   max-width: 900px;
   margin: auto;
@@ -208,5 +208,10 @@ export default {
 
 .content-section {
   margin-top: 20px;
+}
+
+.required {
+  color: red;
+  font-weight: bold;
 }
 </style>

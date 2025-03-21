@@ -60,7 +60,8 @@
     <div v-if="isAddModalOpen" class="modal">
       <div class="modal-content">
         <h3>Добавить род войск</h3>
-        <input v-model="newBranchName" placeholder="Название рода войск" />
+        <label>Название рода войск <span class="required">*</span></label>
+        <input v-model="newBranchName"/>
         <button @click="addBranch">Добавить</button>
         <button @click="closeAddModal">Отмена</button>
       </div>

@@ -74,11 +74,11 @@
         <span class="close" @click="closeAddModal">&times;</span>
         <h3>Добавить новый призывный пункт</h3>
         <div class="form-group">
-          <label>Адрес:</label>
+          <label>Адрес <span class="required">*</span>:</label>
           <input v-model="newAddress" placeholder="Адрес" />
         </div>
         <div class="form-group">
-          <label>Начальник:</label>
+          <label>Начальник <span class="required">*</span>:</label>
           <input v-model="newChiefName" placeholder="Начальник" />
         </div>
         <div class="form-actions">

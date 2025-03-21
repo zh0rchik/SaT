@@ -116,7 +116,7 @@
       </div>
       <form @submit.prevent="submitForm" class="add-form">
         <div class="form-group">
-          <label for="name">ФИО:</label>
+          <label for="name">ФИО <span class="required">*</span>:</label>
           <input
               id="name"
               v-model="newRecruit.name"
@@ -127,7 +127,7 @@
         </div>
 
         <div class="form-group">
-          <label for="date_of_birth">Дата рождения:</label>
+          <label for="date_of_birth">Дата рождения <span class="required">*</span>:</label>
           <input
               id="date_of_birth"
               v-model="newRecruit.date_of_birth"
@@ -137,7 +137,7 @@
         </div>
 
         <div class="form-group">
-          <label for="address">Адрес:</label>
+          <label for="address">Адрес <span class="required">*</span>:</label>
           <input
               id="address"
               v-model="newRecruit.address"
@@ -157,7 +157,7 @@
         </div>
 
         <div class="form-group">
-          <label for="recruitment_office_id">Призывной пункт:</label>
+          <label for="recruitment_office_id">Призывной пункт <span class="required">*</span>:</label>
           <select
               id="recruitment_office_id"
               v-model="newRecruit.recruitment_office_id"
