@@ -123,7 +123,6 @@
             <option value="Чт">Четверг</option>
             <option value="Пт">Пятница</option>
             <option value="Сб">Суббота</option>
-            <option value="Вс">Воскресенье</option>
           </select>
         </div>
         <div class="form-group">
@@ -223,6 +222,7 @@ export default {
     },
 
     async fetchOffices() {
+      this.pageSize = this.user ? Number(localStorage.getItem('page_size')) : 5
       try {
         // Формируем URL с параметрами сортировки, пагинации и фильтрации
         let url = `http://127.0.0.1:8000/recruitment_offices/?sort_by=${this.sortField}&order=${this.sortOrder}`;

@@ -95,6 +95,7 @@ async def update_user_info(
         father_name: Optional[str] = None,
         email: Optional[EmailStr] = None,
         password: Optional[str] = None,
+        page_size: Optional[int] = None,
         db: AsyncSession = Depends(get_session),
         current_user: User = Depends(current_user_update)
 ):
@@ -117,6 +118,8 @@ async def update_user_info(
         user.email = email
     if password:
         user.password = user_crud.hash_password(password)  # Хешируем новый пароль
+    if page_size:
+        user.page_size = page_size
 
     # Сохраняем изменения в базе данных
     await db.commit()
@@ -134,5 +137,6 @@ async def get_user_info(
         first_name=current_user.first_name,
         last_name=current_user.last_name,
         father_name=current_user.father_name,
-        email=current_user.email
+        email=current_user.email,
+        page_size=current_user.page_size
     )

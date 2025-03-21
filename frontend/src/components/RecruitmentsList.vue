@@ -241,6 +241,7 @@ export default {
     async fetchRecruitments() {
       this.loading = true;
       this.error = null;
+      this.pageSize = this.user ? Number(localStorage.getItem('page_size')) : 5
 
       try {
         let url = `http://127.0.0.1:8000/recruitments/?sort_by=${this.sortField}&order=${this.sortOrder}`;

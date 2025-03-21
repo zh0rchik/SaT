@@ -110,7 +110,7 @@ export default {
           token: responseData.access_token,
         }));
         this.user = { username: responseData.username, token: responseData.access_token };
-        this.currentTab = 'branches';
+        this.currentTab = 'profile';
       }
     },
     handleRegister(responseData) {
@@ -125,8 +125,9 @@ export default {
     },
     logout() {
       localStorage.removeItem('user');
+      localStorage.removeItem('page_size');
       this.user = null;
-      this.currentTab = 'branches';
+      this.currentTab = 'login';
     },
     // Метод для перехода на страницу призывника
     viewRecruit(id) {

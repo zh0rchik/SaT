@@ -95,3 +95,5 @@ class User(Base):
     first_name = Column(String, nullable=True)  # Имя (по умолчанию пустое)
     father_name = Column(String, nullable=True)  # Отчество (по умолчанию пустое)
     email = Column(String, unique=True, index=True, nullable=True)  # Email (по умолчанию пустой)
+
+    page_size = Column(Integer, default=5, nullable=False)

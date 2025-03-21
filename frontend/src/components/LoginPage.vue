@@ -49,6 +49,16 @@ export default {
         // Если аутентификация прошла успешно
         this.$emit('login', response.data); // Передаем данные ответа в родительский компонент
         this.errorMessage = null; // Очищаем ошибку
+
+        const token = response.data.access_token;  // Получаем токен из props
+        console.log(token);
+        const r = await axios.get('http://127.0.0.1:8000/auth/profile', {
+          headers: { Authorization: `Bearer ${token}` },  // Отправляем токен в заголовке
+        });
+        console.log(r);
+
+        localStorage.setItem('page_size', Number(r.data.page_size))
+
       } catch (error) {
         console.log('Ошибка при входе:', error); // Отладка ошибки
 
@@ -58,6 +68,8 @@ export default {
         } else {
           this.errorMessage = error.response?.data?.message || 'Произошла ошибка при попытке войти';
         }
+
+
       }
     }
   }

@@ -104,6 +104,7 @@ class UserInformationSchema(BaseModel):
     first_name: Optional[str] = None
     father_name: Optional[str] = None
     email: Optional[EmailStr] = None
+    page_size: Optional[int] = 5
 
     class Config:
         from_attributes = True

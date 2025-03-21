@@ -8,6 +8,7 @@
       <p><strong>Отчество: </strong>{{ userInfo.father_name }}</p>
       <p><strong>Логин: </strong>{{ userInfo.username }}</p>
       <p><strong>Email: </strong>{{ userInfo.email }}</p>
+      <p><strong>Размер страницы: </strong>{{ userInfo.page_size }}</p>
     </div>
     <!-- Если данные еще не получены, отображаем сообщение о загрузке -->
     <div v-else>
@@ -15,7 +16,7 @@
     </div>
     <div class="actions-container">
       <!-- Кнопка "Назад" -->
-      <button @click="goBack" class="back-button">Назад</button>
+      <button @click="goBack" class="back-button">К таблицам</button>
       <!-- Кнопка для выхода из системы -->
       <div class="actions-container">
         <button v-if="user" @click="openEditModal" class="edit-button">
@@ -48,6 +49,9 @@
         <label for="confirm_password">Подтверждение пароля:</label>
         <input v-model="confirmPassword" type="password" id="confirm_password" />
 
+        <label for="page_size">Имя:</label>
+        <input v-model="editUserInfo.page_size" type="text" id="page_size" required />
+
         <div class="form-buttons">
           <button type="submit" class="save-button">Сохранить изменения</button>
           <button type="button" @click="cancelEdit" class="cancel-button">Отмена</button>
@@ -73,7 +77,8 @@ export default {
         father_name: '',
         email: '',
         password: '',
-        username: ''
+        username: '',
+        page_size: 1,
       },
       confirmPassword: '',  // Поле для подтверждения пароля
     };
@@ -128,7 +133,8 @@ export default {
           first_name: this.editUserInfo.first_name,
           last_name: this.editUserInfo.last_name,
           father_name: this.editUserInfo.father_name,
-          email: this.editUserInfo.email
+          email: this.editUserInfo.email,
+          page_size: this.editUserInfo.page_size
         };
 
         // Добавляем пароль только если он был введен
@@ -143,6 +149,8 @@ export default {
           headers: { Authorization: `Bearer ${token}` },
           params: params // Передаем параметры в URL
         });
+
+        localStorage.setItem('page_size', Number(response.data.page_size));
 
         console.log('Ответ сервера:', response.data);
 

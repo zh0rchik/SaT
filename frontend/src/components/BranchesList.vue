@@ -91,7 +91,7 @@ export default {
       sortOrder: 'asc',  // по умолчанию порядок сортировки - по возрастанию
       filterName: '',    // фильтр по названию
       skip: 0,           // для пагинации
-      limit: 3,         // элементов на странице
+      limit: 5,         // элементов на странице
       searchTimeout: null, // для дебаунса поиска
       countRecords: 0
     };
@@ -143,6 +143,7 @@ export default {
     },
 
     async fetchBranches() {
+      this.limit = this.user ? Number(localStorage.getItem('page_size')) : 5
       try {
         // Формируем URL с параметрами фильтрации, сортировки и пагинации
         const params = new URLSearchParams();
