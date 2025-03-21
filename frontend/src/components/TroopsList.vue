@@ -16,6 +16,8 @@
       </div>
     </div>
 
+    <div>По Вашему запросу найдено {{ countRecords }} записи(ей)</div>
+
     <table>
       <thead>
       <tr style="background: #f4f4f4">
@@ -109,13 +111,14 @@ export default {
       filters: {
         name: '',
         branch_id: ''
-      }
+      },
+      countRecords: 0
     };
   },
   methods: {
     async fetchData() {
       try {
-        let url = `http://127.0.0.1:8000/troops/?skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}&sort_by=${this.sortField}&order=${this.sortOrder}`;
+        let url = `http://127.0.0.1:8000/troops/?sort_by=${this.sortField}&order=${this.sortOrder}`;
 
         // Добавляем параметры фильтрации
         if (this.filters.name) {
@@ -125,6 +128,12 @@ export default {
         if (this.filters.branch_id) {
           url += `&branch_id=${this.filters.branch_id}`;
         }
+
+        // я уже устал все это делать
+        const responseForCount = await axios.get(url);
+        this.countRecords = responseForCount.data.length;
+
+        url += `&skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}`
 
         const [troopsResponse, branchesResponse] = await Promise.all([
           axios.get(url),

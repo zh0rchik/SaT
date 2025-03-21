@@ -12,6 +12,8 @@
       <button @click="resetFilters">Сбросить</button>
     </div>
 
+    <div>По Вашему запросу найдено {{ countRecords }} записи(ей)</div>
+
     <table>
       <thead>
       <tr style="background: #f4f4f4">
@@ -90,7 +92,8 @@ export default {
       filterName: '',    // фильтр по названию
       skip: 0,           // для пагинации
       limit: 3,         // элементов на странице
-      searchTimeout: null // для дебаунса поиска
+      searchTimeout: null, // для дебаунса поиска
+      countRecords: 0
     };
   },
   computed: {
@@ -143,8 +146,6 @@ export default {
       try {
         // Формируем URL с параметрами фильтрации, сортировки и пагинации
         const params = new URLSearchParams();
-        params.append('skip', this.skip);
-        params.append('limit', this.limit);
 
         if (this.sortBy) {
           params.append('sort_by', this.sortBy);
@@ -154,6 +155,13 @@ export default {
         if (this.filterName.trim()) {
           params.append('name', this.filterName.trim());
         }
+
+        // Для получения количества
+        const responseForCount = await axios.get(`http://127.0.0.1:8000/branches/?${params.toString()}`);
+        this.countRecords = responseForCount.data.length;
+
+        params.append('skip', this.skip);
+        params.append('limit', this.limit);
 
         const response = await axios.get(`http://127.0.0.1:8000/branches/?${params.toString()}`);
         this.branches = response.data;

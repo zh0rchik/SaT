@@ -31,6 +31,8 @@
       </div>
     </div>
 
+    <div>По Вашему запросу найдено {{ countRecords }} записи(ей)</div>
+
     <!-- Таблица призывников -->
     <div v-if="loading" class="loading">
       Загрузка данных...
@@ -40,11 +42,6 @@
       <button @click="fetchRecruitments" class="retry-button">Попробовать снова</button>
     </div>
     <div v-else class="table-container">
-      <div class="table-header">
-        <button v-if="user" @click="openModal" class="add-button">
-          Добавить призывника
-        </button>
-      </div>
       <table>
         <thead>
         <tr>
@@ -67,7 +64,7 @@
           <th @click="sort('troop_id')" class="sortable" :class="{'asc': sortField === 'troop_id' && sortOrder === 'asc', 'desc': sortField === 'troop_id' && sortOrder === 'desc'}">
             Род войск
           </th>
-          <th>Действия</th>
+          <th v-if="user">Действия</th>
         </tr>
         </thead>
         <tbody>
@@ -83,7 +80,7 @@
           <td>{{ recruit.marital_status ? 'Женат' : 'Холост' }}</td>
           <td>{{ getRecruitmentOfficeInfo(recruit.recruitment_office_id) }}</td>
           <td>{{ getTroopInfo(recruit.troop_id) }}</td>
-          <td>
+          <td v-if="user">
             <button @click="deleteRecruit(recruit.id)" class="delete-button">
               Удалить
             </button>
@@ -101,6 +98,12 @@
         <span>Страница {{ currentPage + 1 }}</span>
         <button @click="nextPage" :disabled="recruitments.length < pageSize">Следующая</button>
       </div>
+    </div>
+
+    <div class="table-header">
+      <button v-if="user" @click="openModal" class="add-button">
+        Добавить призывника
+      </button>
     </div>
   </div>
 
@@ -229,7 +232,8 @@ export default {
         recruitment_office_id: '',
         troop_id: '',
         marital_status: ''
-      }
+      },
+      countRecords: 0
     };
   },
   methods: {
@@ -239,7 +243,7 @@ export default {
       this.error = null;
 
       try {
-        let url = `http://127.0.0.1:8000/recruitments/?skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}&sort_by=${this.sortField}&order=${this.sortOrder}`;
+        let url = `http://127.0.0.1:8000/recruitments/?sort_by=${this.sortField}&order=${this.sortOrder}`;
 
         // Добавляем параметры фильтрации в URL
         if (this.filters.name) {
@@ -265,6 +269,12 @@ export default {
         if (this.filters.marital_status !== '') {
           url += `&marital_status=${this.filters.marital_status}`;
         }
+
+        // количество записей
+        const responseForCount = await axios.get(url);
+        this.countRecords = responseForCount.data.length;
+
+        url += `&skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}`
 
         const response = await axios.get(url);
         this.recruitments = response.data;

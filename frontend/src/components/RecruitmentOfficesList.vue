@@ -11,6 +11,8 @@
       </div>
     </div>
 
+    <div>По Вашему запросу найдено {{ countRecords }} записи(ей)</div>
+
     <!-- Таблица -->
     <table>
       <thead>
@@ -176,7 +178,8 @@ export default {
       filters: {
         address: '',
         chief_name: ''
-      }
+      },
+      countRecords: 0
     };
   },
   methods: {
@@ -222,7 +225,7 @@ export default {
     async fetchOffices() {
       try {
         // Формируем URL с параметрами сортировки, пагинации и фильтрации
-        let url = `http://127.0.0.1:8000/recruitment_offices/?skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}&sort_by=${this.sortField}&order=${this.sortOrder}`;
+        let url = `http://127.0.0.1:8000/recruitment_offices/?sort_by=${this.sortField}&order=${this.sortOrder}`;
 
         // Добавляем параметры фильтрации
         if (this.filters.address) {
@@ -231,6 +234,12 @@ export default {
         if (this.filters.chief_name) {
           url += `&chief_name=${encodeURIComponent(this.filters.chief_name)}`;
         }
+
+        // количество записей
+        const responseForCount = await axios.get(url);
+        this.countRecords = responseForCount.data.length;
+
+        url += `&skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}`
 
         const response = await axios.get(url);
         const offices = response.data;
