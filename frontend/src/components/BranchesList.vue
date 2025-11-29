@@ -75,7 +75,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+
+import api from '@/axios';
 
 export default {
   name: 'BranchesList',
@@ -159,13 +160,13 @@ export default {
         }
 
         // Для получения количества
-        const responseForCount = await axios.get(`http://127.0.0.1:8000/branches/?${params.toString()}`);
+        const responseForCount = await api.get(`/branches/?${params.toString()}`);
         this.countRecords = responseForCount.data.length;
 
         params.append('skip', this.skip);
         params.append('limit', this.limit);
 
-        const response = await axios.get(`http://127.0.0.1:8000/branches/?${params.toString()}`);
+        const response = await api.get(`/branches/?${params.toString()}`);
         this.branches = response.data;
       } catch (error) {
         console.error('Ошибка при загрузке:', error);
@@ -177,7 +178,7 @@ export default {
       if (!this.newBranchName.trim()) return;
       try {
         const token = JSON.parse(localStorage.getItem('user')).token;
-        await axios.post('http://127.0.0.1:8000/branches/', { name: this.newBranchName }, {
+        await api.post('/branches/', { name: this.newBranchName }, {
           headers: { Authorization: `Bearer ${token}` }
         });
         this.newBranchName = '';
@@ -193,7 +194,7 @@ export default {
       if (!confirm('Вы уверены, что хотите удалить?')) return;
       try {
         const token = JSON.parse(localStorage.getItem('user')).token;
-        await axios.delete(`http://127.0.0.1:8000/branches/${branchId}`, {
+        await api.delete(`/branches/${branchId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         this.fetchBranches();
@@ -232,7 +233,7 @@ export default {
       if (!this.editBranchName.trim()) return;
       try {
         const token = JSON.parse(localStorage.getItem('user')).token;
-        await axios.patch(`http://127.0.0.1:8000/branches/${branchId}?name=${encodeURIComponent(this.editBranchName)}`, {}, {
+        await api.patch(`/branches/${branchId}?name=${encodeURIComponent(this.editBranchName)}`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         this.fetchBranches();
