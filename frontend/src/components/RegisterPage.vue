@@ -47,7 +47,8 @@
 </template>
 
 <script>
-import axios from '@/axios';
+
+import api from '@/axios';
 
 export default {
   data() {
@@ -67,15 +68,15 @@ export default {
 
       try {
         // Регистрация пользователя
-        await axios.post(
-          'http://localhost:8000/auth/register',
+        await api.post(
+          '/auth/register',
           { username: this.username, password: this.password },
           { headers: { 'Content-Type': 'application/json' } }
         );
 
         // Автоматический вход после успешной регистрации
-        const loginResponse = await axios.post(
-          'http://localhost:8000/auth/login',
+        const loginResponse = await api.post(
+          '/auth/login',
           { username: this.username, password: this.password },
           { headers: { 'Content-Type': 'application/json' } }
         );

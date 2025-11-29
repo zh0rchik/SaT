@@ -199,7 +199,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+
+import api from '@/axios';
 import { ref, reactive, onMounted } from 'vue';
 
 export default {
@@ -288,8 +289,8 @@ export default {
       addMedExamSuccess.value = null;
 
       try {
-        await axios.post(
-            'http://127.0.0.1:8000/medexams/',
+        await api.post(
+            '/medexams/',
             {
               date_of_exam: medExamForm.date_of_exam,
               recruitment_id: medExamForm.recruitment_id,
@@ -322,7 +323,7 @@ export default {
       loadingMedExams.value = true;
       medExamsError.value = null;
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/medexams/${props.recruitId}`);
+        const response = await api.get(`/medexams/${props.recruitId}`);
         medExams.value = response.data;
       } catch (err) {
         console.error('Ошибка при загрузке данных медкомиссий:', err);
@@ -352,7 +353,7 @@ export default {
       loading.value = true;
       error.value = null;
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/recruitments/${props.recruitId}`);
+        const response = await api.get(`/recruitments/${props.recruitId}`);
         recruit.value = response.data;
 
         // Обновляем форму данными
@@ -366,7 +367,7 @@ export default {
         // Получаем связанные данные, если они есть
         if (response.data.recruitment_office_id) {
           try {
-            const officeResponse = await axios.get(`http://127.0.0.1:8000/recruitment_offices/${response.data.recruitment_office_id}`);
+            const officeResponse = await api.get(`/recruitment_offices/${response.data.recruitment_office_id}`);
             recruitmentOffice.value = officeResponse.data;
           } catch (officeErr) {
             console.error('Ошибка при загрузке данных призывного пункта:', officeErr);
@@ -375,7 +376,7 @@ export default {
 
         if (response.data.troop_id) {
           try {
-            const troopResponse = await axios.get(`http://127.0.0.1:8000/troops/${response.data.troop_id}`);
+            const troopResponse = await api.get(`/troops/${response.data.troop_id}`);
             troop.value = troopResponse.data;
           } catch (troopErr) {
             console.error('Ошибка при загрузке данных о роде войск:', troopErr);
@@ -398,8 +399,8 @@ export default {
     const fetchOfficesAndTroops = async () => {
       try {
         const [officesRes, troopsRes] = await Promise.all([
-          axios.get('http://127.0.0.1:8000/recruitment_offices/'),
-          axios.get('http://127.0.0.1:8000/troops/')
+          api.get('/recruitment_offices/'),
+          api.get('/troops/')
         ]);
         recruitmentOffices.value = officesRes.data;
         troops.value = troopsRes.data;
@@ -453,9 +454,9 @@ export default {
 
         console.log('Sending params:', Object.fromEntries(params.entries()));
 
-        const url = `http://127.0.0.1:8000/recruitments/${props.recruitId}?${params.toString()}`;
+        const url = `/recruitments/${props.recruitId}?${params.toString()}`;
 
-        await axios.patch(
+        await api.patch(
             url,
             {}, // Пустое тело запроса, так как все данные в URL
             {
@@ -484,7 +485,7 @@ export default {
     // Работа с фото
     const getPhotoUrl = (photoPath) => {
       if (!photoPath) return '/default-avatar.png';
-      return photoPath.startsWith('http') ? photoPath : `http://127.0.0.1:8000${photoPath}`;
+      return photoPath.startsWith('http') ? photoPath : `${photoPath}`;
     };
 
     const onPhotoSelectedAndUpload = async (event) => {
@@ -500,8 +501,8 @@ export default {
       formData.append('photo', file); // Используем 'photo' вместо 'file'
 
       try {
-        await axios.post(
-            `http://127.0.0.1:8000/recruitments/upload_avatar/${props.recruitId}`,
+        await api.post(
+            `/recruitments/upload_avatar/${props.recruitId}`,
             formData,
             {
               headers: {

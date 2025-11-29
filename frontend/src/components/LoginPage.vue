@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import axios from '@/axios';
+import api from '@/axios';
 
 export default {
   data() {
@@ -50,7 +50,7 @@ export default {
   methods: {
     async submitForm() {
       try {
-        const response = await axios.post("http://localhost:8000/auth/login", {
+        const response = await api.post("/auth/login", {
           username: this.username,
           password: this.password
         });
@@ -60,7 +60,7 @@ export default {
 
         const token = response.data.access_token;
 
-        const profile = await axios.get("http://127.0.0.1:8000/auth/profile", {
+        const profile = await api.get("/auth/profile", {
           headers: { Authorization: `Bearer ${token}` }
         });
 

@@ -90,7 +90,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/axios';
 
 export default {
   name: 'TroopsList',
@@ -121,7 +121,7 @@ export default {
     async fetchData() {
       this.pageSize = this.user ? Number(localStorage.getItem('page_size')) : 5
       try {
-        let url = `http://127.0.0.1:8000/troops/?sort_by=${this.sortField}&order=${this.sortOrder}`;
+        let url = `/troops/?sort_by=${this.sortField}&order=${this.sortOrder}`;
 
         // Добавляем параметры фильтрации
         if (this.filters.name) {
@@ -133,14 +133,14 @@ export default {
         }
 
         // я уже устал все это делать
-        const responseForCount = await axios.get(url);
+        const responseForCount = await api.get(url);
         this.countRecords = responseForCount.data.length;
 
         url += `&skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}`
 
         const [troopsResponse, branchesResponse] = await Promise.all([
-          axios.get(url),
-          axios.get('http://127.0.0.1:8000/branches/')
+          api.get(url),
+          api.get('/branches/')
         ]);
         this.troops = troopsResponse.data;
         this.branches = branchesResponse.data;
@@ -172,7 +172,7 @@ export default {
 
       try {
         const token = JSON.parse(localStorage.getItem('user')).token;
-        await axios.post('http://127.0.0.1:8000/troops/', {
+        await api.post('/troops/', {
           name: this.newTroopName,
           branch_id: this.selectedBranchId
         }, {
@@ -195,7 +195,7 @@ export default {
       if (confirm('Вы уверены, что хотите удалить этот вид войск?')) {
         try {
           const token = JSON.parse(localStorage.getItem('user')).token;
-          await axios.delete(`http://127.0.0.1:8000/troops/${troopId}`, {
+          await api.delete(`/troops/${troopId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           this.fetchData();
@@ -239,8 +239,8 @@ export default {
         const token = JSON.parse(localStorage.getItem('user')).token;
 
         // Используем URL параметры вместо тела запроса
-        await axios.patch(
-            `http://127.0.0.1:8000/troops/${troopId}?name=${encodeURIComponent(this.editTroopName)}&branch_id=${this.editBranchId}`,
+        await api.patch(
+            `/troops/${troopId}?name=${encodeURIComponent(this.editTroopName)}&branch_id=${this.editBranchId}`,
             {}, // Пустое тело запроса
             {
               headers: { Authorization: `Bearer ${token}` }

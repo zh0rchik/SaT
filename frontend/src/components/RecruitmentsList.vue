@@ -194,7 +194,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+
+import api from '@/axios';
 
 export default {
   name: 'RecruitmentsList',
@@ -244,7 +245,7 @@ export default {
       this.pageSize = this.user ? Number(localStorage.getItem('page_size')) : 5
 
       try {
-        let url = `http://127.0.0.1:8000/recruitments/?sort_by=${this.sortField}&order=${this.sortOrder}`;
+        let url = `/recruitments/?sort_by=${this.sortField}&order=${this.sortOrder}`;
 
         // Добавляем параметры фильтрации в URL
         if (this.filters.name) {
@@ -272,12 +273,12 @@ export default {
         }
 
         // количество записей
-        const responseForCount = await axios.get(url);
+        const responseForCount = await api.get(url);
         this.countRecords = responseForCount.data.length;
 
         url += `&skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}`
 
-        const response = await axios.get(url);
+        const response = await api.get(url);
         this.recruitments = response.data;
 
       } catch (error) {
@@ -290,7 +291,7 @@ export default {
 
     async fetchRecruitmentOffices() {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/recruitment_offices/');
+        const response = await api.get('/recruitment_offices/');
         this.recruitmentOffices = response.data;
       } catch (error) {
         console.error('Ошибка при загрузке призывных пунктов:', error);
@@ -299,7 +300,7 @@ export default {
 
     async fetchTroops() {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/troops/');
+        const response = await api.get('/troops/');
         this.troops = response.data;
       } catch (error) {
         console.error('Ошибка при загрузке родов войск:', error);
@@ -380,7 +381,7 @@ export default {
 
       try {
         const token = JSON.parse(localStorage.getItem('user'))?.token;
-        await axios.delete(`http://127.0.0.1:8000/recruitments/${id}`, {
+        await api.delete(`/recruitments/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         this.fetchRecruitments();
@@ -426,7 +427,7 @@ export default {
 
       try {
         const token = JSON.parse(localStorage.getItem('user'))?.token;
-        await axios.post('http://127.0.0.1:8000/recruitments/', this.newRecruit, {
+        await api.post('/recruitments/', this.newRecruit, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

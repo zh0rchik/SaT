@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/axios';
 import BranchesList from '@/components/BranchesList.vue';
 import TroopsList from '@/components/TroopsList.vue';
 import RecruitmentOfficesList from '@/components/RecruitmentOfficesList.vue';
@@ -92,7 +92,7 @@ export default {
       }
 
       try {
-        const response = await axios.get('http://127.0.0.1:8000/auth/profile', {
+        const response = await api.get('/auth/profile', {
           headers: {
             Authorization: `Bearer ${token}`,
           },

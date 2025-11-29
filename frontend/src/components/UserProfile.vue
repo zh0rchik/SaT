@@ -62,7 +62,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/axios';
 
 export default {
   name: 'UserProfile',
@@ -88,7 +88,7 @@ export default {
     async fetchUserProfile() {
       try {
         const token = this.user.token;  // Получаем токен из props
-        const response = await axios.get('http://127.0.0.1:8000/auth/profile', {
+        const response = await api.get('/auth/profile', {
           headers: { Authorization: `Bearer ${token}` },  // Отправляем токен в заголовке
         });
         this.userInfo = response.data;  // Сохраняем информацию о пользователе в userInfo
@@ -145,7 +145,7 @@ export default {
         console.log('Отправляемые параметры:', params);
 
         // Отправляем запрос с параметрами в URL
-        const response = await axios.patch('http://127.0.0.1:8000/auth/profile/update', null, {
+        const response = await api.patch('/auth/profile/update', null, {
           headers: { Authorization: `Bearer ${token}` },
           params: params // Передаем параметры в URL
         });

@@ -143,7 +143,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/axios';
 
 export default {
   name: 'RecruitmentOfficesList',
@@ -225,7 +225,7 @@ export default {
       this.pageSize = this.user ? Number(localStorage.getItem('page_size')) : 5
       try {
         // Формируем URL с параметрами сортировки, пагинации и фильтрации
-        let url = `http://127.0.0.1:8000/recruitment_offices/?sort_by=${this.sortField}&order=${this.sortOrder}`;
+        let url = `/recruitment_offices/?sort_by=${this.sortField}&order=${this.sortOrder}`;
 
         // Добавляем параметры фильтрации
         if (this.filters.address) {
@@ -236,17 +236,17 @@ export default {
         }
 
         // количество записей
-        const responseForCount = await axios.get(url);
+        const responseForCount = await api.get(url);
         this.countRecords = responseForCount.data.length;
 
         url += `&skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}`
 
-        const response = await axios.get(url);
+        const response = await api.get(url);
         const offices = response.data;
 
         // Запрашиваем режимы работы для каждого офиса
         for (const office of offices) {
-          const modesResponse = await axios.get(`http://127.0.0.1:8000/work_hours_office/${office.id}`);
+          const modesResponse = await api.get(`/work_hours_office/${office.id}`);
           office.modes_work = modesResponse.data;
         }
 
@@ -296,7 +296,7 @@ export default {
 
       try {
         const token = JSON.parse(localStorage.getItem('user'))?.token;
-        await axios.delete(`http://127.0.0.1:8000/work_hours_office/${modeId}`, {
+        await api.delete(`/work_hours_office/${modeId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         await this.fetchOffices();
@@ -309,7 +309,7 @@ export default {
       if (!confirm('Удалить этот пункт?')) return;
       try {
         const token = JSON.parse(localStorage.getItem('user'))?.token;
-        await axios.delete(`http://127.0.0.1:8000/recruitment_offices/${id}`, {
+        await api.delete(`/recruitment_offices/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         await this.fetchOffices();
@@ -326,8 +326,8 @@ export default {
 
       try {
         const token = JSON.parse(localStorage.getItem('user'))?.token;
-        await axios.patch(
-            `http://127.0.0.1:8000/recruitment_offices/${this.editOfficeId}?address=${encodeURIComponent(this.editAddress)}&chief_name=${encodeURIComponent(this.editChiefName)}`,
+        await api.patch(
+            `/recruitment_offices/${this.editOfficeId}?address=${encodeURIComponent(this.editAddress)}&chief_name=${encodeURIComponent(this.editChiefName)}`,
             {},
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -346,7 +346,7 @@ export default {
 
       try {
         const token = JSON.parse(localStorage.getItem('user'))?.token;
-        await axios.post('http://127.0.0.1:8000/recruitment_offices/', {
+        await api.post('/recruitment_offices/', {
           address: this.newAddress,
           chief_name: this.newChiefName,
         }, {
@@ -368,7 +368,7 @@ export default {
 
       try {
         const token = JSON.parse(localStorage.getItem('user'))?.token;
-        await axios.post(`http://127.0.0.1:8000/work_hours_office/${this.selectedOfficeId}`, {
+        await api.post(`/work_hours_office/${this.selectedOfficeId}`, {
           day: this.newWorkDay,
           work_start: this.newWorkStart,
           work_end: this.newWorkEnd,
